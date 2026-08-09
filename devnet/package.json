@@ -1,0 +1,13 @@
+{
+  "name": "nexa-devnet-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cycle complet depot -> depense confidentielle sur Solana devnet",
+  "license": "MIT",
+  "scripts": {
+    "start": "node run.js"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.0"
+  }
+}
