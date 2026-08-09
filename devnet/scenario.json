@@ -1,16 +1,24 @@
 {
-  "_note": "Scenario devnet reproductible. La preuve a ete generee hors ligne avec la MEME ceremonie que la cle de verification embarquee dans le programme. Ceremonie de TEST.",
-  "depots_hex": [
-    "14d9788e98724dc5332da027981f45cde2d02e6e9e10265595dafb19d7b85d36",
-    "0dc7d66f554374ab1e8960faaf418a3df01bbd37efc9580b84a8efbf925e444c"
+  "_note": "Scenario devnet v3 : arbre de nullifieurs INDEXE (plus aucun compte de nullifieur). Phase 1 = ceremonie publique Hermez 2^14 ; phase 2 = test.",
+  "depots": [
+    {
+      "montant": "100000000",
+      "k_hex": "23ca0fc8c5acb6fbe680260dc778efaf728eddae5d37fc39ddd8d562b87ac05f",
+      "cm_attendu_hex": "2f4ffb97051f6f3b0dab3553b1c94d42820d3818809a0446fd6de3746be6ab30"
+    },
+    {
+      "montant": "100000000",
+      "k_hex": "1280b7764359f764480c5ce82eb542104c26520d34370eee9fdbcf5bc802dc56",
+      "cm_attendu_hex": "177ff6fc2bfbbb2bddfee974feeeea43aa65390606a9c78b80cddb64e37e67fa"
+    }
   ],
-  "racine_attendue_hex": "1fb9c5461ce480999a541f9f7590ba9d8e004b1a6e468b4328a9c3062b811f42",
-  "nullifieurs_hex": [
-    "187bd7f79c4fa8fe4f0ec233de59c1cb82c8ba001cbda73ad098d98944c5dccc",
-    "281a1661d2fc2185b53021bf5a3c5d159cc0b1c65908d1fbbd5acbb6b42efa85"
-  ],
-  "proof_a_b64": "IrWNPjWMWDR9psLqKNXgAap6cxwmplbJieoXThYIWg0TWXbxllmRhsn73ZH4sGUKNDSBUeAr832MLPNX1fuHxw==",
-  "proof_b_b64": "CESrVbo4ZinwMUq01g/nAX+SSGVES/mMp+dgKyfqVQYTd95mLZP4WslsZd8+cb7fR6kYpgRB5dr9fRHrrQ7AqSIvPghysgIc7lyCYgDxY2fYyNqgRlKkE8AE74oeuqUIBNcFodCzF9Sn0giLN5OOUoG464IanO1F3uL/tZMILBU=",
-  "proof_c_b64": "I6hA8vkTJLcwkYPSsmxJPO8srFDPNo4El0B9mTnFI1gL0h4j7tegDvqWmWqzun+6QbCf5a5iT9E9oquD6YCJ+Q==",
-  "public_inputs_b64": "H7nFRhzkgJmaVB+fdZC6nY4ASxpuRotDKKnDBiuBH0IYe9f3nE+o/k8OwjPeWcHLgsi6ABy9pzrQmNmJRMXczCgaFmHS/CGFtTAhv1o8XRWcwLHGWQjR+71ay7a0LvqFBssonSbtbpYJ3v2/TwHKD1zx5LOS759soH7cSVhOrI0PUnNqVkB+NM36puh0wsQDUZi4I6T6spzemZlcB48j4wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB"
+  "racine_attendue_hex": "03e43fb9c5985a9d7d73d742074e536b00f767a02e642db3873ae40ef403ce08",
+  "nf_racine_avant_hex": "03e9e3ae36a4ed163525da89d3b341df454f1b3cf6cdb762690e21b856ac12a9",
+  "nf_racine_apres_hex": "2dfe6026b60ce89dddc9fdbc9d8ba904b7952bb7c4f06b569baa989aa5d67302",
+  "frais": "10",
+  "total_depose": "200000000",
+  "proof_a_b64": "CwoVeLeE+VTuelJC4sTochU34xk/uS7zzXtKH8eKbHIcMaTEhBC7BfkmWyxgMAjdALAas7uck8WuASNxgGM3vA==",
+  "proof_b_b64": "GB+sKYDfttNbia84kxQsHEgr8+SKOS6haHqDtVVz0xUcitUMi2ydYk3OfaKmHj3bjmIq3CGv6q9bDV+ISjvcpC/w2zqleCml52Kn/aP+YJbK0wuJRcmBxUSJAB9zYPuhKZAXK1A/BJelCHqkuyqF64d0WHOEdtPl1GEcxhaBxhY=",
+  "proof_c_b64": "DzMf2WAmx34+Q64nkJlJNsRUUAAZA3E9TUs5uHlnMI0JzNMUoOWvByaCdDqEcYTy4YF5FT5pTthmuaSTs/HWGA==",
+  "public_inputs_b64": "A+Q/ucWYWp19c9dCB05TawD3Z6AuZC2zhzrkDvQDzggNRf84U5n3KWFt0c75vzBSqSI4tg4b2sqSB9zL3ws+/xApYLISMPBva+w5B5s6TRmS2Ic17gu18AHPblKR/mG8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoD6eOuNqTtFjUl2onTs0HfRU8bPPbNt2JpDiG4VqwSqS3+YCa2DOid3cn9vJ2LqQS3lSu3xPBrVpuqmJql1nMC"
 }
