@@ -1,0 +1,16 @@
+{
+  "_note": "Scenario devnet reproductible. La preuve a ete generee hors ligne avec la MEME ceremonie que la cle de verification embarquee dans le programme. Ceremonie de TEST.",
+  "depots_hex": [
+    "14d9788e98724dc5332da027981f45cde2d02e6e9e10265595dafb19d7b85d36",
+    "0dc7d66f554374ab1e8960faaf418a3df01bbd37efc9580b84a8efbf925e444c"
+  ],
+  "racine_attendue_hex": "1fb9c5461ce480999a541f9f7590ba9d8e004b1a6e468b4328a9c3062b811f42",
+  "nullifieurs_hex": [
+    "187bd7f79c4fa8fe4f0ec233de59c1cb82c8ba001cbda73ad098d98944c5dccc",
+    "281a1661d2fc2185b53021bf5a3c5d159cc0b1c65908d1fbbd5acbb6b42efa85"
+  ],
+  "proof_a_b64": "IrWNPjWMWDR9psLqKNXgAap6cxwmplbJieoXThYIWg0TWXbxllmRhsn73ZH4sGUKNDSBUeAr832MLPNX1fuHxw==",
+  "proof_b_b64": "CESrVbo4ZinwMUq01g/nAX+SSGVES/mMp+dgKyfqVQYTd95mLZP4WslsZd8+cb7fR6kYpgRB5dr9fRHrrQ7AqSIvPghysgIc7lyCYgDxY2fYyNqgRlKkE8AE74oeuqUIBNcFodCzF9Sn0giLN5OOUoG464IanO1F3uL/tZMILBU=",
+  "proof_c_b64": "I6hA8vkTJLcwkYPSsmxJPO8srFDPNo4El0B9mTnFI1gL0h4j7tegDvqWmWqzun+6QbCf5a5iT9E9oquD6YCJ+Q==",
+  "public_inputs_b64": "H7nFRhzkgJmaVB+fdZC6nY4ASxpuRotDKKnDBiuBH0IYe9f3nE+o/k8OwjPeWcHLgsi6ABy9pzrQmNmJRMXczCgaFmHS/CGFtTAhv1o8XRWcwLHGWQjR+71ay7a0LvqFBssonSbtbpYJ3v2/TwHKD1zx5LOS759soH7cSVhOrI0PUnNqVkB+NM36puh0wsQDUZi4I6T6spzemZlcB48j4wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB"
+}
