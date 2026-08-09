@@ -1,0 +1,208 @@
+name: Vérification on-chain et mesure du coût
+
+on:
+  push:
+    paths: ["solana-program/**", "devnet/**", ".github/workflows/measure-cu.yml"]
+  pull_request:
+    paths: ["solana-program/**", "devnet/**"]
+  workflow_dispatch:
+
+jobs:
+  build-and-measure:
+    runs-on: ubuntu-latest
+    env:
+      SBF_OUT_DIR: ${{ github.workspace }}/solana-program/target/deploy
+    defaults:
+      run:
+        working-directory: solana-program
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            solana-program/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('solana-program/Cargo.toml') }}
+      - name: Installer la CLI Solana
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Construire le programme (SBF)
+        run: cargo-build-sbf
+      - name: Taille du binaire
+        run: ls -la target/deploy/*.so
+      - name: Mesurer le coût en unités de calcul
+        run: cargo test --test cu_benchmark -- --nocapture
+      - name: Extraire le chiffre dans le résumé
+        if: always()
+        run: |
+          cargo test --test cu_benchmark -- --nocapture 2>&1 \
+            | grep -E "COÛT MESURÉ|part du plafond|écart calcul" \
+            | sed 's/^/    /' > /tmp/cu.txt || true
+          {
+            echo "### Coût de vérification mesuré"
+            echo ''
+            echo '```'
+            cat /tmp/cu.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: programme-sbf
+          path: solana-program/target/deploy/*.so
+          if-no-files-found: warn
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Le cycle complet sur un VRAI validateur Solana, lancé dans le runner.
+  #
+  # Pourquoi ce job existe : le robinet devnet public refuse les IP de
+  # datacenter (testé le 9 août 2026 : 6 tentatives, 0 SOL). Un validateur
+  # local, lui, distribue autant de SOL qu'on veut. Ce n'est pas un réseau
+  # public, mais c'est le même runtime : mêmes PDA, mêmes CPI, même
+  # vérification de preuve, même refus de double dépense.
+  #
+  # Celui-là DOIT passer. S'il échoue, le code est en cause.
+  # ─────────────────────────────────────────────────────────────────────
+  validateur-local:
+    needs: build-and-measure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Installer la CLI Solana
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Construire le programme (SBF)
+        working-directory: solana-program
+        run: cargo-build-sbf
+
+      - name: Démarrer un validateur local
+        run: |
+          solana-test-validator --reset --quiet --ledger /tmp/ledger > /tmp/validator.log 2>&1 &
+          for i in $(seq 1 40); do
+            sleep 3
+            if solana --url http://127.0.0.1:8899 cluster-version >/dev/null 2>&1; then
+              echo "validateur prêt après $((i*3)) s"
+              break
+            fi
+          done
+          solana --url http://127.0.0.1:8899 cluster-version
+
+      - name: Clé et provision (locale, illimitée)
+        run: |
+          solana config set --url http://127.0.0.1:8899
+          solana-keygen new --no-bip39-passphrase --silent --force
+          solana airdrop 100
+          solana balance
+
+      - name: Déployer
+        id: deploy
+        working-directory: solana-program
+        run: |
+          OUT=$(solana program deploy target/deploy/nexa_verifier.so --output json)
+          PID=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin)['programId'])")
+          echo "programId=$PID" >> "$GITHUB_OUTPUT"
+          echo "programme : $PID"
+
+      - name: Jouer le cycle complet
+        working-directory: devnet
+        env:
+          RPC_URL: http://127.0.0.1:8899
+        run: |
+          npm install --no-audit --no-fund
+          node run.js "${{ steps.deploy.outputs.programId }}" | tee /tmp/cycle.txt
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "### Cycle complet sur validateur local"
+            echo ''
+            echo "- programme : `${{ steps.deploy.outputs.programId }}`"
+            echo ''
+            echo '```'
+            cat /tmp/cycle.txt 2>/dev/null || echo "(le cycle n a pas pu s executer)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Journal du validateur en cas d échec
+        if: failure()
+        run: tail -60 /tmp/validator.log
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Le même cycle sur le VRAI devnet public. Exige une clé déjà alimentée
+  # (secret DEVNET_KEYPAIR) : le robinet public refuse les runners.
+  # Clé JETABLE, réservée au devnet, ~3 SOL. Voir devnet/README.md.
+  # ─────────────────────────────────────────────────────────────────────
+  devnet:
+    needs: validateur-local
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Installer la CLI Solana
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Construire le programme (SBF)
+        working-directory: solana-program
+        run: cargo-build-sbf
+      - name: Provisionner la clé
+        id: fonds
+        env:
+          DEVNET_KEYPAIR: ${{ secrets.DEVNET_KEYPAIR }}
+        run: |
+          solana config set --url https://api.devnet.solana.com
+          mkdir -p ~/.config/solana
+          if [ -n "$DEVNET_KEYPAIR" ]; then
+            printf '%s' "$DEVNET_KEYPAIR" > ~/.config/solana/id.json
+          else
+            echo "::warning::pas de secret DEVNET_KEYPAIR — voir devnet/README.md"
+            solana-keygen new --no-bip39-passphrase --silent --force
+            solana airdrop 2 || true
+          fi
+          echo "payeur=$(solana address)" >> "$GITHUB_OUTPUT"
+          SOLDE=$(solana balance | awk '{print $1}')
+          echo "solde=$SOLDE" >> "$GITHUB_OUTPUT"
+          if awk "BEGIN{exit !($SOLDE < 2)}"; then
+            echo "::error::solde insuffisant ($SOLDE SOL) — alimenter la cle sur faucet.solana.com"
+            exit 1
+          fi
+      - name: Déployer sur devnet
+        id: deploy
+        working-directory: solana-program
+        run: |
+          OUT=$(solana program deploy target/deploy/nexa_verifier.so --output json)
+          PID=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin)['programId'])")
+          echo "programId=$PID" >> "$GITHUB_OUTPUT"
+      - name: Jouer le cycle complet
+        working-directory: devnet
+        run: |
+          npm install --no-audit --no-fund
+          node run.js "${{ steps.deploy.outputs.programId }}" | tee /tmp/devnet.txt
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "### Cycle complet sur devnet public"
+            echo ''
+            echo "- payeur : `${{ steps.fonds.outputs.payeur }}`"
+            echo "- solde : ${{ steps.fonds.outputs.solde }} SOL"
+            echo "- programme : `${{ steps.deploy.outputs.programId }}`"
+            echo ''
+            echo '```'
+            tail -40 /tmp/devnet.txt 2>/dev/null || echo "(non execute — financement manquant, voir devnet/README.md)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
