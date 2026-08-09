@@ -11,18 +11,55 @@
 use solana_poseidon::{hashv, Endianness, Parameters};
 use solana_program::program_error::ProgramError;
 
-/// Profondeur de l'arbre. 8 → 256 notes (taille de la preuve de concept).
-pub const DEPTH: usize = 8;
+/// Profondeur de l'arbre des engagements. 6 → 64 notes.
+/// ⚠️ Doit être IDENTIQUE à celle de `circuit/pour.circom`.
+pub const DEPTH: usize = 6;
+/// Profondeur de l'arbre des nullifieurs. 3 → 8 nullifieurs.
+pub const NFDEPTH: usize = 3;
 /// Nombre de racines mémorisées. Sans cet historique, deux swaps simultanés
 /// se cassent mutuellement : la racine bouge pendant qu'on prépare sa preuve.
 pub const ROOT_HISTORY: usize = 32;
 
+// Disposition du compte, en octets :
+//   [0..32)    racine des engagements
+//   [32..64)   racine des NULLIFIEURS — remplace à elle seule tous les
+//              comptes de nullifieurs, et leur rent de 0,0018 SOL par swap
+//   [64..68)   next_index (u32, little-endian)
+//   [68..72)   root_index (u32, little-endian)
+//   [72..72+32*DEPTH)                  filled_subtrees
+//   [.. + 32*ROOT_HISTORY)             historique des racines
 pub const OFF_ROOT: usize = 0;
-pub const OFF_NEXT: usize = 32;
-pub const OFF_RIDX: usize = 36;
-pub const OFF_FILLED: usize = 40;
+pub const OFF_NFROOT: usize = 32;
+pub const OFF_NEXT: usize = 64;
+pub const OFF_RIDX: usize = 68;
+pub const OFF_FILLED: usize = 72;
 pub const OFF_ROOTS: usize = OFF_FILLED + 32 * DEPTH;
 pub const POOL_LEN: usize = OFF_ROOTS + 32 * ROOT_HISTORY;
+
+/// Poseidon sur trois entrées — le hachage d'une feuille de l'arbre indexé.
+pub fn h3(a: &[u8; 32], b: &[u8; 32], c: &[u8; 32]) -> Result<[u8; 32], ProgramError> {
+    hashv(Parameters::Bn254X5, Endianness::BigEndian, &[a, b, c])
+        .map(|r| r.to_bytes())
+        .map_err(|_| ProgramError::InvalidArgument)
+}
+
+/// Racine de l'arbre des nullifieurs vide : une sentinelle `(0, 0, 0)` à
+/// l'index 0, tous les autres emplacements à zéro. Tout nullifieur non nul
+/// est supérieur à la sentinelle, donc l'arbre vide sait déjà répondre
+/// « absent » — c'est ce qui amorce la chaîne.
+pub fn racine_nf_vide() -> Result<[u8; 32], ProgramError> {
+    let zero = [0u8; 32];
+    let mut niveau: Vec<[u8; 32]> = vec![zero; 1 << NFDEPTH];
+    niveau[0] = h3(&zero, &zero, &zero)?;
+    while niveau.len() > 1 {
+        let mut suivant = Vec::with_capacity(niveau.len() / 2);
+        for paire in niveau.chunks(2) {
+            suivant.push(h2(&paire[0], &paire[1])?);
+        }
+        niveau = suivant;
+    }
+    Ok(niveau[0])
+}
 
 /// Poseidon sur deux éléments de corps, en big-endian — exactement la
 /// convention de circomlib utilisée par le circuit.
@@ -70,6 +107,8 @@ impl<'a> Pool<'a> {
     }
 
     pub fn root(&self) -> [u8; 32] { self.get32(OFF_ROOT) }
+    pub fn nf_root(&self) -> [u8; 32] { self.get32(OFF_NFROOT) }
+    pub fn set_nf_root(&mut self, r: &[u8; 32]) { self.put32(OFF_NFROOT, r); }
     pub fn next_index(&self) -> u32 { self.get_u32(OFF_NEXT) }
     pub fn root_index(&self) -> u32 { self.get_u32(OFF_RIDX) }
     pub fn filled(&self, i: usize) -> [u8; 32] { self.get32(OFF_FILLED + 32 * i) }
@@ -82,8 +121,7 @@ impl<'a> Pool<'a> {
     fn pousser_racine(&mut self, root: &[u8; 32]) {
         let i = (self.root_index() as usize) % ROOT_HISTORY;
         self.put32(OFF_ROOTS + 32 * i, root);
-        let n = self.root_index().wrapping_add(1);
-        self.put_u32(OFF_RIDX, n);
+        self.put_u32(OFF_RIDX, self.root_index().wrapping_add(1));
         self.put32(OFF_ROOT, root);
     }
 
@@ -99,6 +137,9 @@ impl<'a> Pool<'a> {
             self.put32(OFF_ROOTS + 32 * i, &[0u8; 32]);
         }
         self.pousser_racine(&z[DEPTH]);
+        // l'arbre des nullifieurs démarre avec sa seule sentinelle
+        let nf = racine_nf_vide()?;
+        self.set_nf_root(&nf);
         Ok(())
     }
 
@@ -113,7 +154,7 @@ impl<'a> Pool<'a> {
     ) -> Result<[u8; 32], ProgramError> {
         let mut idx = self.next_index();
         if (idx as usize) >= (1usize << DEPTH) {
-            return Err(ProgramError::InvalidAccountData);
+            return Err(ProgramError::InvalidAccountData); // arbre plein
         }
         let mut cur = *feuille;
         for i in 0..DEPTH {
@@ -126,8 +167,7 @@ impl<'a> Pool<'a> {
             cur = h2(&g, &d)?;
             idx /= 2;
         }
-        let n = self.next_index() + 1;
-        self.put_u32(OFF_NEXT, n);
+        self.put_u32(OFF_NEXT, self.next_index() + 1);
         self.pousser_racine(&cur);
         Ok(cur)
     }
