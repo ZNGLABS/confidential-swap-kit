@@ -2,12 +2,13 @@
   "name": "nexa-devnet-demo",
   "version": "0.1.0",
   "private": true,
-  "description": "Cycle complet depot -> depense confidentielle sur Solana devnet",
+  "description": "Cycle complet : depots en jetons -> depense confidentielle -> frais payes en NX",
   "license": "MIT",
   "scripts": {
     "start": "node run.js"
   },
   "dependencies": {
-    "@solana/web3.js": "^1.98.0"
+    "@solana/web3.js": "^1.98.0",
+    "@solana/spl-token": "^0.4.9"
   }
 }
