@@ -64,8 +64,11 @@ pub mod jetons;
 pub mod pool;
 pub mod verifying_key;
 
-use jetons::{denomination_valide, ix_transfert, TOKEN_PROGRAM_ID};
-use pool::{h2, zeros, Pool, POOL_LEN};
+use jetons::{
+    coffre_attendu, denomination_valide, ix_transfert, mint_compte_jetons, mint_vers_champ,
+    TOKEN_PROGRAM_ID,
+};
+use pool::{h3, zeros, Pool, POOL_LEN};
 use verifying_key::{NR_PUBLIC_INPUTS, VERIFYINGKEY};
 
 /// Convertit un élément de corps 32 octets big-endian en u64.
@@ -235,14 +238,35 @@ fn shield(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> Progra
         return Err(ProgramError::IncorrectProgramId);
     }
 
-    // 1. les jetons entrent réellement dans le coffre
+    // 1. LE COFFRE N'EST PAS CELUI QU'ON NOUS DÉSIGNE, C'EST CELUI QU'ON
+    //    RECALCULE.
+    //
+    // Faille corrigée le 10 août 2026 : `coffre` arrivait de l'appelant sans
+    // aucun contrôle. On pouvait passer son propre compte, s'y virer 100
+    // jetons, et repartir avec un engagement valide dans l'arbre — puis
+    // retirer depuis le vrai coffre. Ici on lit le mint sur le compte, on
+    // dérive l'adresse associée du PDA du pool, et on refuse tout le reste.
+    if coffre.owner != &TOKEN_PROGRAM_ID {
+        msg!("le coffre n est pas un compte de jetons");
+        return Err(ProgramError::IllegalOwner);
+    }
+    let mint = mint_compte_jetons(&coffre.try_borrow_data()?)?;
+    if *coffre.key != coffre_attendu(compte_pool.key, &mint) {
+        msg!("ce compte n est pas le coffre du pool pour ce jeton");
+        return Err(ProgramError::InvalidSeeds);
+    }
+
+    // 2. les jetons entrent réellement dans le coffre
     invoke(
         &ix_transfert(jetons_deposant.key, coffre.key, deposant.key, montant),
         &[jetons_deposant.clone(), coffre.clone(), deposant.clone(), prog_jetons.clone()],
     )?;
 
-    // 2. l'engagement est recalculé ici, pas accepté sur parole
-    let cm = h2(&u64_vers_champ(montant), &k)?;
+    // 3. l'engagement est recalculé ici, pas accepté sur parole — et il lie
+    //    désormais LE JETON, pas seulement le montant. Sans ce troisième
+    //    terme, déposer un jeton sans valeur en déclarant une note en NX
+    //    resterait possible.
+    let cm = h3(&u64_vers_champ(montant), &mint_vers_champ(&mint), &k)?;
     let z = zeros()?;
     let mut data = compte_pool.try_borrow_mut_data()?;
     let mut p = Pool::new(&mut data)?;
@@ -259,6 +283,7 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     //   1,2 nouveaux engagements
     //   3 frais
     //   4,5 racine des nullifieurs AVANT et APRÈS
+    //   6 le JETON concerné
     //
     // Les nullifieurs eux-mêmes ne sont plus publics : ils vivent dans le
     // circuit, qui prouve qu'ils étaient absents et les insère. Plus aucun
@@ -266,6 +291,7 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     let pubs = verifier(corps)?;
     let (racine, cm0, cm1) = (pubs[0], pubs[1], pubs[2]);
     let (nf_avant, nf_apres) = (pubs[4], pubs[5]);
+    let jeton = pubs[6];
     // pubs[3] = les frais, réglés au relayeur à l'étape 5
 
     let it = &mut accounts.iter();
@@ -283,6 +309,28 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     }
     if *prog_jetons.key != TOKEN_PROGRAM_ID {
         return Err(ProgramError::IncorrectProgramId);
+    }
+
+    // 1bis. LE COFFRE, ENCORE — et cette fois il doit correspondre au jeton
+    //       que la preuve annonce.
+    //
+    // Les frais sortent de ce coffre. Sans ce contrôle, un appelant pourrait
+    // présenter une preuve portant sur le jeton A et se faire payer depuis le
+    // coffre du jeton B : la comptabilité cachée de B ne correspondrait plus
+    // à ce que le coffre de B détient. Deux vérifications, indissociables :
+    // le coffre est bien le nôtre pour ce mint, et ce mint est bien celui de
+    // la preuve.
+    if coffre.owner != &TOKEN_PROGRAM_ID {
+        return Err(ProgramError::IllegalOwner);
+    }
+    let mint = mint_compte_jetons(&coffre.try_borrow_data()?)?;
+    if *coffre.key != coffre_attendu(compte_pool.key, &mint) {
+        msg!("ce compte n est pas le coffre du pool pour ce jeton");
+        return Err(ProgramError::InvalidSeeds);
+    }
+    if mint_vers_champ(&mint) != jeton {
+        msg!("le coffre ne correspond pas au jeton prouve");
+        return Err(ProgramError::InvalidArgument);
     }
 
     // 2 et 3. les deux racines, lues d'un seul coup.
