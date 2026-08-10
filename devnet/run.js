@@ -46,7 +46,11 @@ const sc = JSON.parse(fs.readFileSync(path.join(__dirname, "scenario.json")));
 const cx = new Connection(RPC, "confirmed");
 const hex = (s) => Buffer.from(s, "hex");
 const b64 = (s) => Buffer.from(s, "base64");
-const lien = (s) => `https://explorer.solana.com/tx/${s}?cluster=devnet`;
+// Un lien d'explorateur ne veut rien dire sur un validateur local : personne
+// ne peut le suivre. On n'en affiche que si l'on parle vraiment à devnet.
+const RESEAU = RPC.includes("devnet") ? "devnet" : RPC.includes("mainnet") ? "mainnet" : "validateur local";
+const lien = (s) =>
+  RESEAU === "devnet" ? `https://explorer.solana.com/tx/${s}?cluster=devnet` : s;
 const nx = (n) => (Number(n) / NX).toFixed(5);
 const meta = (p, s, w) => ({ pubkey: p, isSigner: s, isWritable: w });
 
@@ -58,7 +62,7 @@ async function envoyer(nom, ix, signataires = [payeur]) {
 
 (async () => {
   console.log("═".repeat(68));
-  console.log("  Cycle complet avec de vrais jetons — devnet");
+  console.log(`  Cycle complet avec de vrais jetons — ${RESEAU}`);
   console.log("═".repeat(68));
   console.log(`  programme : ${programId.toBase58()}`);
   console.log(`  payeur    : ${payeur.publicKey.toBase58()}`);
@@ -200,7 +204,7 @@ async function envoyer(nom, ix, signataires = [payeur]) {
 
   const tx = await cx.getTransaction(sigPour, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
   console.log("\n" + "═".repeat(68));
-  console.log(`  swap confidentiel + frais en NX, sur devnet`);
+  console.log(`  swap confidentiel + frais en NX, sur ${RESEAU}`);
   console.log(`  signature : ${sigPour}`);
   console.log(`  ${lien(sigPour)}`);
   console.log(`  unites de calcul : ${tx?.meta?.computeUnitsConsumed}`);
