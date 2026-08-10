@@ -101,6 +101,20 @@ jobs:
           cargo-build-sbf
           ls -la target/deploy/*.so
 
+      # 10 août : avant de renoncer, on regarde ce que les outils proposent
+      # vraiment, au lieu de le supposer. Quelles options de version de VM
+      # le compilateur expose-t-il ?
+      - name: Diagnostic — options du compilateur
+        continue-on-error: true
+        run: |
+          echo "── versions ──"
+          solana --version || true
+          solana-test-validator --version || true
+          echo "── cargo-build-sbf --help ──"
+          cargo-build-sbf --help || true
+          echo "── options du validateur qui parlent de features ──"
+          solana-test-validator --help 2>&1 | grep -i -A3 -E "feature" || true
+
       - name: Démarrer un validateur local
         run: |
           solana-test-validator --reset --quiet --ledger /tmp/ledger > /tmp/validator.log 2>&1 &
@@ -119,6 +133,12 @@ jobs:
           solana-keygen new --no-bip39-passphrase --silent --force
           solana airdrop 100
           solana balance
+
+      # Et de l autre côté : quelles versions de VM ce validateur active-t-il ?
+      - name: Diagnostic — feature gates du validateur
+        continue-on-error: true
+        run: |
+          solana feature status 2>&1 | grep -i -E "sbpf|bpf|loader|program" || true
 
       - name: Déployer
         id: deploy
