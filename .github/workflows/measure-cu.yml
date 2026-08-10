@@ -107,13 +107,16 @@ jobs:
       - name: Diagnostic — options du compilateur
         continue-on-error: true
         run: |
-          echo "── versions ──"
-          solana --version || true
-          solana-test-validator --version || true
-          echo "── cargo-build-sbf --help ──"
-          cargo-build-sbf --help || true
-          echo "── options du validateur qui parlent de features ──"
-          solana-test-validator --help 2>&1 | grep -i -A3 -E "feature" || true
+          {
+            echo "### Diagnostic SBPF"
+            echo ''
+            echo '```'
+            solana --version 2>&1 | head -2
+            cargo-build-sbf --help 2>&1 | grep -i -E "arch|sbpf|version|tools|target" | head -25
+            echo "--- options features du validateur ---"
+            solana-test-validator --help 2>&1 | grep -i -E "feature" | head -10
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Démarrer un validateur local
         run: |
@@ -138,7 +141,13 @@ jobs:
       - name: Diagnostic — feature gates du validateur
         continue-on-error: true
         run: |
-          solana feature status 2>&1 | grep -i -E "sbpf|bpf|loader|program" || true
+          {
+            echo "### Feature gates du validateur local"
+            echo ''
+            echo '```'
+            solana feature status 2>&1 | grep -i -E "sbpf" | head -20
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Déployer
         id: deploy
