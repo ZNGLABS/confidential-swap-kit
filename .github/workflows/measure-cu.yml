@@ -70,16 +70,15 @@ jobs:
   validateur-local:
     needs: build-and-measure
     runs-on: ubuntu-latest
-    # ⚠️ IMPASSE CONNUE, documentée le 9 août 2026 (runs 21 à 23).
-    # Avec la toolchain stable, cargo-build-sbf émet un binaire dont la version
-    # de VM n est pas activée par solana-test-validator :
-    #   « Detected sbpf_version required by the executable which are not enabled »
-    # Avec une toolchain plus ancienne (v2.1.21), le validateur accepterait le
-    # binaire mais la compilation échoue : notre code exige solana-program 4.1.
-    # Les deux contraintes sont incompatibles en l état.
-    #
-    # Le devnet public, lui, active les versions récentes — c est donc la bonne
-    # cible. Ce job reste en place à titre de diagnostic, sans bloquer.
+    # 10 août 2026 — CAUSE TROUVÉE, et c était l inverse de ce que je croyais.
+    # Diagnostic, côté validateur local :
+    #   · SIMD-0166 / 0173 / 0377 : déploiement SBPFv1, v2, v3 ACTIVÉS
+    #   · SIMD-0500 : déploiement SBPF v0, v1 et v2 DÉSACTIVÉ
+    # Côté compilateur : `cargo-build-sbf --arch` a pour défaut **v0**.
+    # « Detected sbpf_version ... not enabled » ne voulait donc pas dire
+    # « ta VM est trop neuve » mais « ta VM est trop VIEILLE ».
+    # Correction : compiler explicitement en --arch v3.
+    # (Le devnet public acceptait v0 : SIMD-0500 n y est pas encore actif.)
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -98,7 +97,8 @@ jobs:
       - name: Construire le programme (SBF)
         working-directory: solana-program
         run: |
-          cargo-build-sbf
+          # --arch v3 : le défaut est v0, et SIMD-0500 interdit v0 au déploiement
+          cargo-build-sbf --arch v3
           ls -la target/deploy/*.so
 
       # 10 août : avant de renoncer, on regarde ce que les outils proposent
