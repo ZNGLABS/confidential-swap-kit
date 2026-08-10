@@ -212,6 +212,35 @@ async function envoyer(nom, ix, signataires = [payeur]) {
     console.log("  ✅ refuse (la preuve part d'une racine de nullifieurs perimee)");
   }
 
+  // ── 8. LA FAILLE DOIT ÊTRE FERMÉE, ET ÇA SE DÉMONTRE
+  //
+  // Écrire un contrôle ne prouve rien : ce qui prouve, c'est de rejouer
+  // l'attaque et de la voir refusée. Ici on tente exactement ce qui marchait
+  // avant le 10 août 2026 — déposer en désignant son PROPRE compte de jetons
+  // comme coffre. Le programme recalcule l'adresse associée du pool ; le
+  // compte fourni n'y correspond pas ; la transaction doit échouer.
+  console.log("\n  L attaque du faux coffre doit echouer.");
+  {
+    const d = sc.depots[0];
+    const montant = Buffer.alloc(8);
+    montant.writeBigUInt64LE(BigInt(d.montant));
+    try {
+      await envoyer("Shield vers un faux coffre", new TransactionInstruction({
+        programId,
+        keys: [
+          meta(payeur.publicKey, true, true), meta(pool, false, true),
+          meta(compteDeposant.address, false, true),   // ← le coffre de l attaquant
+          meta(compteDeposant.address, false, true), meta(TOKEN_PROGRAM_ID, false, false),
+        ],
+        data: Buffer.concat([Buffer.from([TAG.SHIELD]), montant, hex(d.k_hex)]),
+      }));
+      throw new Error("LE FAUX COFFRE EST PASSE");
+    } catch (e) {
+      if (String(e.message).includes("LE FAUX COFFRE EST PASSE")) throw e;
+      console.log("  ✅ refuse — le coffre est recalcule, pas accepte sur parole");
+    }
+  }
+
   const tx = await cx.getTransaction(sigPour, { commitment: "confirmed", maxSupportedTransactionVersion: 0 });
   console.log("\n" + "═".repeat(68));
   console.log(`  swap confidentiel + frais en NX, sur ${RESEAU}`);
