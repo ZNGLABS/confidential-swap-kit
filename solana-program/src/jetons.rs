@@ -86,3 +86,42 @@ pub fn mint_compte_jetons(donnees: &[u8]) -> Result<Pubkey, ProgramError> {
     }
     Ok(Pubkey::new_from_array(donnees[0..32].try_into().unwrap()))
 }
+
+/// ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL — le programme des comptes
+/// de jetons associés. On en a besoin pour RECALCULER l'adresse du coffre au
+/// lieu de faire confiance à celle qu'on nous donne.
+pub const ATA_PROGRAM_ID: Pubkey = Pubkey::new_from_array([
+    140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142, 13, 131,
+    11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216, 219, 233, 248, 89,
+]);
+
+/// L'unique coffre légitime du pool pour un jeton donné : le compte associé
+/// du PDA du pool.
+///
+/// **C'est le correctif de la faille du 10 août 2026.** Avant, `Shield`
+/// acceptait le compte que l'appelant lui désignait comme coffre. On pouvait
+/// donc se virer 100 jetons à soi-même, obtenir malgré tout un engagement
+/// valide inséré dans l'arbre, puis retirer depuis le vrai coffre. L'invariant
+/// « le coffre contient au moins la somme des notes » tombait.
+/// Ici l'adresse est RECALCULÉE ; il n'y a plus rien à désigner.
+pub fn coffre_attendu(pool: &Pubkey, mint: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[pool.as_ref(), TOKEN_PROGRAM_ID.as_ref(), mint.as_ref()],
+        &ATA_PROGRAM_ID,
+    )
+    .0
+}
+
+/// L'adresse d'un mint, vue comme un élément de corps BN254.
+///
+/// Une clé publique fait 256 bits, un élément de corps 254 : on met l'octet de
+/// poids fort à zéro et il reste 248 bits. Le circuit applique EXACTEMENT la
+/// même règle (`gen_devnet.js`, `MINT_HEX` masqué de la même façon). Deux
+/// conversions qui divergeraient d'un bit produiraient un refus de preuve sans
+/// aucun message — c'est le genre d'écart qu'on ne trouve qu'en le cherchant.
+pub fn mint_vers_champ(mint: &Pubkey) -> [u8; 32] {
+    let mut f = [0u8; 32];
+    f.copy_from_slice(mint.as_ref());
+    f[0] = 0;
+    f
+}
