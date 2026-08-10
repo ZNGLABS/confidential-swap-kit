@@ -21,6 +21,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 const {
   Connection, Keypair, PublicKey, Transaction, TransactionInstruction,
   SystemProgram, sendAndConfirmTransaction,
@@ -69,17 +70,26 @@ async function envoyer(nom, ix, signataires = [payeur]) {
 
   const [pool] = PublicKey.findProgramAddressSync([Buffer.from("pool")], programId);
 
-  // ── 1. le jeton NX de test (réutilisé si déjà créé)
-  const cheminMint = path.join(dossier, "mint-nx.json");
-  let mint;
-  if (fs.existsSync(cheminMint)) {
-    mint = new PublicKey(JSON.parse(fs.readFileSync(cheminMint)).mint);
-    console.log(`  mint NX   : ${mint.toBase58()} (reutilise)`);
+  // ── 1. le jeton NX de test — adresse DÉTERMINISTE
+  //
+  // Depuis la v4, le jeton entre dans l'engagement et dans l'énoncé public.
+  // La preuve est générée hors ligne, avant que ce script ne tourne : elle
+  // doit donc porter sur un mint dont l'adresse est connue d'avance. On la
+  // dérive d'une graine fixe, publiée dans le scénario — n'importe qui peut
+  // la recalculer et rejouer le cycle à l'identique.
+  const graineMint = crypto.createHash("sha256").update(sc.mint_test_graine).digest();
+  const cleMint = Keypair.fromSeed(graineMint);
+  const mint = cleMint.publicKey;
+  if (mint.toBase58() !== sc.mint_test_base58) {
+    throw new Error(`mint derive ${mint.toBase58()} != mint du scenario ${sc.mint_test_base58}`);
+  }
+  if (await cx.getAccountInfo(mint)) {
+    console.log(`  mint NX   : ${mint.toBase58()} (deja en place)`);
   } else {
-    mint = await createMint(cx, payeur, payeur.publicKey, null, 6);
-    fs.writeFileSync(cheminMint, JSON.stringify({ mint: mint.toBase58() }));
+    await createMint(cx, payeur, payeur.publicKey, null, 6, cleMint);
     console.log(`  mint NX   : ${mint.toBase58()} (cree, 6 decimales)`);
   }
+  fs.writeFileSync(path.join(dossier, "mint-nx.json"), JSON.stringify({ mint: mint.toBase58() }));
 
   // comptes de jetons : déposant, coffre (autorité = PDA du pool), relayeur
   const compteDeposant = await getOrCreateAssociatedTokenAccount(cx, payeur, mint, payeur.publicKey);
