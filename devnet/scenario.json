@@ -1,15 +1,15 @@
 {
-  "_note": "Scenario v5 : retrait reel vers un beneficiaire public, scelle dans la preuve.",
+  "_note": "Scenario v6 : arbres de 1 048 576 notes et 1 048 576 nullifieurs (profondeur 20), ceremonie 2^16.",
   "depots": [
     {
       "montant": "100000000",
-      "k_hex": "16d4b80d35a19999b5003c427cfb8a82f566b92be216c340e559279f211620ad",
-      "cm_attendu_hex": "22e8f52a471e1a65a215cfcfb43166425c7a58f9ce9d7564152c87f420736b45"
+      "k_hex": "1ce767c5b2f1246da26702e6dde12bccb9235e11c01496f78667d4077d68b54e",
+      "cm_attendu_hex": "09ae2eb8123962657acbd1e20485d2fec0f6d5ed8872efc3d91d80422e8e28e3"
     },
     {
       "montant": "100000000",
-      "k_hex": "209ddc66dccba2b166f8a49d8917b07193fb2a4f778130eccd1f263f2a321cac",
-      "cm_attendu_hex": "267ceb36f837fb4aa80ff54d81ab4b1ba0933e7b2089d32396a8c55896bec414"
+      "k_hex": "23ea7f7c2575f0afe41594374fcc1095cf6388e1b432111193d892cd35659328",
+      "cm_attendu_hex": "0b2244e124eee6d310e2993b3e792bb6fcc699a2bf3f0d703ec78e1d33bcbd8b"
     }
   ],
   "mint_test_base58": "HnpMSSfgBkrJL7waH9BHC8KyLxAraTH9prWJq2yrVPce",
@@ -19,13 +19,13 @@
   "beneficiaire_graine": "nexa-confidential-test-beneficiaire-v1",
   "beneficiaire_compte_base58": "B8LjYgmNPWoNKvyFNTXAtX8sGSKyZtdk2uEBKtVNj2iy",
   "montant_retrait": "50000000",
-  "racine_attendue_hex": "10ad2fc065471b3a109a7c6214581838d42a1dcd8fcefb0303b6d6589c11730a",
-  "nf_racine_avant_hex": "03e9e3ae36a4ed163525da89d3b341df454f1b3cf6cdb762690e21b856ac12a9",
-  "nf_racine_apres_hex": "2342cb06dc280fc7b9f11aa3de2c03e9d42f1cd2b0b6fdac145518bf179a3ef1",
+  "racine_attendue_hex": "0efcb90813ba9e2a01ecdbeeeb5dafd4fae0ca3d817f70c8484f38c2a55ff29d",
+  "nf_racine_avant_hex": "0a29d3e8af83b32c517a30c24fbf9d6291a761f2906d761efb7c125275bfcec6",
+  "nf_racine_apres_hex": "0681aba1d5bdb61a08897d21781da91bac94905bb432ab01e6af14c7ee0adf99",
   "frais": "10",
   "total_depose": "200000000",
-  "proof_a_b64": "BP/nymQwusyD2EPYfeVZfJeqvSRzMjv+3qDYSFOuxfgOFilcIkqV8IDQUTzYjDrF8oOV+IRq8f0hLuWf440NTw==",
-  "proof_b_b64": "GtrxYHlszGP3PNIOy44IgRaSrMfiFlWXAwVWfZyWPmASu0z/ZLwstOQVuXtrI5+tFwF+LF+4kessjcSHDYTIeChPMkup0zCq86YMKxT0VksBfP9ErVcmFwdULhlL2ndCC/EeNYZK3KTHjiG/MVgSvY0s0nPPc6qFXh8dt9dnoIs=",
-  "proof_c_b64": "D8rRfZFGAGAYd1IosrkFHfThwOGdcTTuW/r4JQzUqF8gU9/X8f7D91/WS/OHCX371YoJWYz87M40dzVcwJN+Ew==",
-  "public_inputs_b64": "EK0vwGVHGzoQmnxiFFgYONQqHc2PzvsDA7bWWJwRcwopDe6ucqqm79s8jY/i61pbRD+B0EJ9VAOHnoJKlG0NlwjulgkViJmTnTZ/mjyG6T3all97j/pHPjo4MQsk0ssJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoD6eOuNqTtFjUl2onTs0HfRU8bPPbNt2JpDiG4VqwSqSNCywbcKA/HufEao94sA+nULxzSsLb9rBRVGL8Xmj7xAHerMyGBUk+bAbssqnyNRLBSPFNXNk+a+YUEkUXLPdsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvrwgAB2P2tNE+TUS0+vcteniitcAy/Ve4UUZnI+X3Wi5LDG"
+  "proof_a_b64": "GIje1h6NrUzJBEuTd4b57eHP3nJC2hKOHw3RUaN7ZmkecO/1gq23FBYBFlvX/+UY4hDTLQTuzd6OE19WxFvHTQ==",
+  "proof_b_b64": "EEduU1Qq7s651TBYDkYil8Z4IyspKl4slR6+FGArFXkBFaIND431mdmeNiXsOnVB4m3GHRov0fBY5oKRFg4ecy0l2ScaDVouD1FZVZbnx7Cl7D/7g25NlNvjztROfLUIIW5aoqUuwQmzVJ2YgwZhaBdulhuyvexISva089jBoBc=",
+  "proof_c_b64": "HxBQArrzqTP1PmFIhttDfkTe2MHko3vLUxG/HgmQET0gNUpXNJMPOMFlkqUVyepvFy8A3W4ZqjyPFPoYGnCTYg==",
+  "public_inputs_b64": "Dvy5CBO6nioB7Nvu612v1Prgyj2Bf3DISE84wqVf8p0of3uyW8ppKAuqyc7e6xeUDwKx3LBngrfxWhNXt72oRwDZL/du99aGJoT0AiQcL6Q32/LSizN2KWIg/MAsDlRiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoKKdPor4OzLFF6MMJPv51ikadh8pBtdh77fBJSdb/OxgaBq6HVvbYaCIl9IXgdqRuslJBbtDKrAeavFMfuCt+ZAHerMyGBUk+bAbssqnyNRLBSPFNXNk+a+YUEkUXLPdsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvrwgAB2P2tNE+TUS0+vcteniitcAy/Ve4UUZnI+X3Wi5LDG"
 }
