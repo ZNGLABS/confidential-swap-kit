@@ -100,6 +100,21 @@ async function envoyer(nom, ix, signataires = [payeur]) {
   }
   const compteRelayeur = getAssociatedTokenAddressSync(mint, payeur.publicKey, false);
 
+  // Le bénéficiaire du retrait : déterministe lui aussi, car son compte est
+  // scellé dans la preuve. On crée le compte s'il n'existe pas — n'importe qui
+  // peut le faire, ça ne donne aucun droit dessus.
+  const beneficiaire = Keypair.fromSeed(
+    crypto.createHash("sha256").update(sc.beneficiaire_graine).digest()
+  ).publicKey;
+  const compteBenef = getAssociatedTokenAddressSync(mint, beneficiaire, false);
+  if (compteBenef.toBase58() !== sc.beneficiaire_compte_base58) {
+    throw new Error(`compte beneficiaire ${compteBenef.toBase58()} != scenario ${sc.beneficiaire_compte_base58}`);
+  }
+  if (!(await cx.getAccountInfo(compteBenef))) {
+    await envoyer("compte du beneficiaire cree",
+      createAssociatedTokenAccountInstruction(payeur.publicKey, compteBenef, beneficiaire, mint));
+  }
+
   const totalDepose = Number(sc.total_depose);
   const soldeDeposant = Number((await getAccount(cx, compteDeposant.address)).amount);
   if (soldeDeposant < totalDepose) {
@@ -160,7 +175,8 @@ async function envoyer(nom, ix, signataires = [payeur]) {
   // relayeur qui n'immobilise rien.
   const comptes = [
     meta(payeur.publicKey, true, true), meta(pool, false, true),
-    meta(coffre, false, true), meta(compteRelayeur, false, true), meta(TOKEN_PROGRAM_ID, false, false),
+    meta(coffre, false, true), meta(compteRelayeur, false, true),
+    meta(compteBenef, false, true), meta(TOKEN_PROGRAM_ID, false, false),
   ];
   const data = Buffer.concat([
     Buffer.from([TAG.POUR]),
@@ -168,6 +184,7 @@ async function envoyer(nom, ix, signataires = [payeur]) {
   ]);
 
   const relAvant = Number((await getAccount(cx, compteRelayeur)).amount);
+  const benefAvant = Number((await getAccount(cx, compteBenef)).amount);
   const solAvant = await cx.getBalance(payeur.publicKey);
   const sigPour = await envoyer("Pour — depense confidentielle", new TransactionInstruction({ programId, keys: comptes, data }));
   const solApres = await cx.getBalance(payeur.publicKey);
@@ -176,11 +193,19 @@ async function envoyer(nom, ix, signataires = [payeur]) {
   const relApres = Number((await getAccount(cx, compteRelayeur)).amount);
   const frais = Number(sc.frais);
 
-  console.log(`\n  coffre   : ${nx(apresDepots)} -> ${nx(coffreApres)} NX  (-${nx(apresDepots - coffreApres)})`);
-  console.log(`  relayeur : ${nx(relAvant)} -> ${nx(relApres)} NX  (+${nx(relApres - relAvant)})`);
-  if (apresDepots - coffreApres !== frais) throw new Error("le coffre n'a pas diminue des frais");
+  const benefApres = Number((await getAccount(cx, compteBenef)).amount);
+  const retrait = Number(sc.montant_retrait);
+
+  console.log(`\n  coffre       : ${nx(apresDepots)} -> ${nx(coffreApres)} NX  (-${nx(apresDepots - coffreApres)})`);
+  console.log(`  relayeur     : ${nx(relAvant)} -> ${nx(relApres)} NX  (+${nx(relApres - relAvant)})`);
+  console.log(`  beneficiaire : ${nx(benefAvant)} -> ${nx(benefApres)} NX  (+${nx(benefApres - benefAvant)})`);
   if (relApres - relAvant !== frais) throw new Error("le relayeur n'a pas recu les frais");
-  console.log(`  ✅ ${nx(frais)} NX ont quitte le pool pour le relayeur — $NX a servi`);
+  if (benefApres - benefAvant !== retrait) throw new Error("le beneficiaire n'a pas recu le retrait");
+  if (apresDepots - coffreApres !== frais + retrait) throw new Error("le coffre n'a pas diminue de frais + retrait");
+  console.log(`  ✅ ${nx(frais)} NX au relayeur — $NX a servi`);
+  console.log(`  ✅ ${nx(retrait)} NX SORTIS du pool vers un compte public — le retrait fonctionne`);
+  console.log(`  ✅ le coffre a diminue d'exactement frais + retrait : rien ne fuit, rien ne se cree`);
+  console.log(`     (les 149,99999 NX restants sont deux notes dont personne ne connait les montants)`);
 
   // ── 6. LE CHIFFRE DE CETTE PHASE : le rent par swap
   //
