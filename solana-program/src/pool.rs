@@ -11,11 +11,12 @@
 use solana_poseidon::{hashv, Endianness, Parameters};
 use solana_program::program_error::ProgramError;
 
-/// Profondeur de l'arbre des engagements. 6 → 64 notes.
+/// Profondeur de l'arbre des engagements. 20 → 1 048 576 notes.
 /// ⚠️ Doit être IDENTIQUE à celle de `circuit/pour.circom`.
-pub const DEPTH: usize = 6;
-/// Profondeur de l'arbre des nullifieurs. 3 → 8 nullifieurs.
-pub const NFDEPTH: usize = 3;
+pub const DEPTH: usize = 20;
+/// Profondeur de l'arbre des nullifieurs. 20 → 1 048 576 nullifieurs.
+/// ⚠️ Doit rester ≤ DEPTH : `racine_nf_vide()` réutilise le tableau `zeros`.
+pub const NFDEPTH: usize = 20;
 /// Nombre de racines mémorisées. Sans cet historique, deux swaps simultanés
 /// se cassent mutuellement : la racine bouge pendant qu'on prépare sa preuve.
 pub const ROOT_HISTORY: usize = 32;
@@ -47,18 +48,22 @@ pub fn h3(a: &[u8; 32], b: &[u8; 32], c: &[u8; 32]) -> Result<[u8; 32], ProgramE
 /// l'index 0, tous les autres emplacements à zéro. Tout nullifieur non nul
 /// est supérieur à la sentinelle, donc l'arbre vide sait déjà répondre
 /// « absent » — c'est ce qui amorce la chaîne.
+/// ⚠️ Calculé en O(profondeur), pas en O(2^profondeur).
+///
+/// La première version parcourait les 2^NFDEPTH feuilles. À NFDEPTH = 3 cela
+/// faisait 8 hachages ; à NFDEPTH = 14 cela en ferait 16 383, et
+/// `Initialize` dépasserait le plafond de calcul avant d'avoir commencé.
+/// Or l'arbre vide n'a qu'une feuille non nulle — la sentinelle, tout à
+/// gauche : il suffit de remonter son chemin en pairant à chaque niveau avec
+/// un sous-arbre vide, dont la valeur est précisément `zeros[i]`.
 pub fn racine_nf_vide() -> Result<[u8; 32], ProgramError> {
     let zero = [0u8; 32];
-    let mut niveau: Vec<[u8; 32]> = vec![zero; 1 << NFDEPTH];
-    niveau[0] = h3(&zero, &zero, &zero)?;
-    while niveau.len() > 1 {
-        let mut suivant = Vec::with_capacity(niveau.len() / 2);
-        for paire in niveau.chunks(2) {
-            suivant.push(h2(&paire[0], &paire[1])?);
-        }
-        niveau = suivant;
+    let z = zeros()?;
+    let mut cur = h3(&zero, &zero, &zero)?;   // la sentinelle (0, 0, 0)
+    for i in 0..NFDEPTH {
+        cur = h2(&cur, &z[i])?;               // frère de droite : sous-arbre vide
     }
-    Ok(niveau[0])
+    Ok(cur)
 }
 
 /// Poseidon sur deux éléments de corps, en big-endian — exactement la
