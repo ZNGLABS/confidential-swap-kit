@@ -1,27 +1,31 @@
 {
-  "_note": "Scenario v4 : jeton lie a l engagement (cm = Poseidon(value, token, k)) et jeton en entree publique. Mint de test deterministe.",
+  "_note": "Scenario v5 : retrait reel vers un beneficiaire public, scelle dans la preuve.",
   "depots": [
     {
       "montant": "100000000",
-      "k_hex": "235aaef914031bcf023f41f8f02906e952fca0e769f002e0f7757bb24628682a",
-      "cm_attendu_hex": "071062793c0e43fa6ae4e06e601a7177457e336363224eeeb4ef72fbd627e839"
+      "k_hex": "16d4b80d35a19999b5003c427cfb8a82f566b92be216c340e559279f211620ad",
+      "cm_attendu_hex": "22e8f52a471e1a65a215cfcfb43166425c7a58f9ce9d7564152c87f420736b45"
     },
     {
       "montant": "100000000",
-      "k_hex": "1bbcb63eb30c03b4ed0f5a93e8115a9a91d71faa17f80eace0feea0b686e9af5",
-      "cm_attendu_hex": "180e7dbef0463f92afdad9659bcc17bf0ee20451ef2c7fc50e271c550cb3b8a3"
+      "k_hex": "209ddc66dccba2b166f8a49d8917b07193fb2a4f778130eccd1f263f2a321cac",
+      "cm_attendu_hex": "267ceb36f837fb4aa80ff54d81ab4b1ba0933e7b2089d32396a8c55896bec414"
     }
   ],
   "mint_test_base58": "HnpMSSfgBkrJL7waH9BHC8KyLxAraTH9prWJq2yrVPce",
   "mint_test_graine": "nexa-confidential-test-mint-v1",
   "token_champ_hex": "0077ab332181524f9b01bb2caa7c8d44b0523c5357364f9af985049145cb3ddb",
-  "racine_attendue_hex": "0be41841ca4dabd038007f3905962edeb208b269602a2b3b311ffca301457c32",
+  "beneficiaire_base58": "2hUF7tK54pGkzbaWJCBN5EUyjkDr4yyqZHugkAAQYmr3",
+  "beneficiaire_graine": "nexa-confidential-test-beneficiaire-v1",
+  "beneficiaire_compte_base58": "B8LjYgmNPWoNKvyFNTXAtX8sGSKyZtdk2uEBKtVNj2iy",
+  "montant_retrait": "50000000",
+  "racine_attendue_hex": "10ad2fc065471b3a109a7c6214581838d42a1dcd8fcefb0303b6d6589c11730a",
   "nf_racine_avant_hex": "03e9e3ae36a4ed163525da89d3b341df454f1b3cf6cdb762690e21b856ac12a9",
-  "nf_racine_apres_hex": "0ac8577575f71330784ed4cec39c136c5f7729ba4f9809b9a11aa7a3115b0c90",
+  "nf_racine_apres_hex": "2342cb06dc280fc7b9f11aa3de2c03e9d42f1cd2b0b6fdac145518bf179a3ef1",
   "frais": "10",
   "total_depose": "200000000",
-  "proof_a_b64": "B7Cxy6rEKTJZ/OAQBb/S22REO5J5CzILRwBZNBEUcVYno28nhMGtZ0YtYCM/zw/T+RmWr1R6C1TMvt5tLoY5NA==",
-  "proof_b_b64": "JFvs9m/swygM/tboNj3NJz3dLxe3/N+MxwaVI4qcZ8UlyJCU/O+kaoXtfmXdUXe8AMY0yaym7IZMMPU9N9jr/AKVHdd81aspwR7/vERee8DRSDUNnonL3mSDpWmxIDC/HuwiLRWfTQfUHGlvcGyIT6YJbLVp/ux/6FHDiNyubFA=",
-  "proof_c_b64": "B7bPgAxbon/KVGSAMaBOTUdAxna6811M7GVhDQxU7EkpxQOqHiPW1KLWi+pbWqOL2MWUXFWezb0mQAqSAIcMgA==",
-  "public_inputs_b64": "C+QYQcpNq9A4AH85BZYu3rIIsmlgKis7MR/8owFFfDImOpgOaPSgDrZ4GsaSahqI+ZXGNeBBhZvXnikuhXo/RAVSMpYzjJ31Y+kfDAQcBHx+39Ly+j4YXZ/eMG8VErNFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoD6eOuNqTtFjUl2onTs0HfRU8bPPbNt2JpDiG4VqwSqQrIV3V19xMweE7UzsOcE2xfdym6T5gJuaEap6MRWwyQAHerMyGBUk+bAbssqnyNRLBSPFNXNk+a+YUEkUXLPds="
+  "proof_a_b64": "BP/nymQwusyD2EPYfeVZfJeqvSRzMjv+3qDYSFOuxfgOFilcIkqV8IDQUTzYjDrF8oOV+IRq8f0hLuWf440NTw==",
+  "proof_b_b64": "GtrxYHlszGP3PNIOy44IgRaSrMfiFlWXAwVWfZyWPmASu0z/ZLwstOQVuXtrI5+tFwF+LF+4kessjcSHDYTIeChPMkup0zCq86YMKxT0VksBfP9ErVcmFwdULhlL2ndCC/EeNYZK3KTHjiG/MVgSvY0s0nPPc6qFXh8dt9dnoIs=",
+  "proof_c_b64": "D8rRfZFGAGAYd1IosrkFHfThwOGdcTTuW/r4JQzUqF8gU9/X8f7D91/WS/OHCX371YoJWYz87M40dzVcwJN+Ew==",
+  "public_inputs_b64": "EK0vwGVHGzoQmnxiFFgYONQqHc2PzvsDA7bWWJwRcwopDe6ucqqm79s8jY/i61pbRD+B0EJ9VAOHnoJKlG0NlwjulgkViJmTnTZ/mjyG6T3all97j/pHPjo4MQsk0ssJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoD6eOuNqTtFjUl2onTs0HfRU8bPPbNt2JpDiG4VqwSqSNCywbcKA/HufEao94sA+nULxzSsLb9rBRVGL8Xmj7xAHerMyGBUk+bAbssqnyNRLBSPFNXNk+a+YUEkUXLPdsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvrwgAB2P2tNE+TUS0+vcteniitcAy/Ve4UUZnI+X3Wi5LDG"
 }
