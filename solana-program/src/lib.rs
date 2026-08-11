@@ -65,7 +65,7 @@ pub mod pool;
 pub mod verifying_key;
 
 use jetons::{
-    coffre_attendu, denomination_valide, ix_transfert, mint_compte_jetons, mint_vers_champ,
+    coffre_attendu, denomination_valide, ix_transfert, mint_compte_jetons, cle_vers_champ,
     TOKEN_PROGRAM_ID,
 };
 use pool::{h3, zeros, Pool, POOL_LEN};
@@ -266,7 +266,7 @@ fn shield(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> Progra
     //    désormais LE JETON, pas seulement le montant. Sans ce troisième
     //    terme, déposer un jeton sans valeur en déclarant une note en NX
     //    resterait possible.
-    let cm = h3(&u64_vers_champ(montant), &mint_vers_champ(&mint), &k)?;
+    let cm = h3(&u64_vers_champ(montant), &cle_vers_champ(&mint), &k)?;
     let z = zeros()?;
     let mut data = compte_pool.try_borrow_mut_data()?;
     let mut p = Pool::new(&mut data)?;
@@ -292,13 +292,16 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     let (racine, cm0, cm1) = (pubs[0], pubs[1], pubs[2]);
     let (nf_avant, nf_apres) = (pubs[4], pubs[5]);
     let jeton = pubs[6];
+    let destinataire = pubs[8];
     // pubs[3] = les frais, réglés au relayeur à l'étape 5
+    // pubs[7] = le montant retiré, envoyé au bénéficiaire à l'étape 5
 
     let it = &mut accounts.iter();
     let payeur = next_account_info(it)?;          // le RELAYEUR : il avance le SOL
     let compte_pool = next_account_info(it)?;
     let coffre = next_account_info(it)?;
     let jetons_relayeur = next_account_info(it)?; // et se rembourse ici, en NX
+    let beneficiaire = next_account_info(it)?;    // là où sortent les jetons retirés
     let prog_jetons = next_account_info(it)?;
 
     if !payeur.is_signer {
@@ -328,7 +331,7 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
         msg!("ce compte n est pas le coffre du pool pour ce jeton");
         return Err(ProgramError::InvalidSeeds);
     }
-    if mint_vers_champ(&mint) != jeton {
+    if cle_vers_champ(&mint) != jeton {
         msg!("le coffre ne correspond pas au jeton prouve");
         return Err(ProgramError::InvalidArgument);
     }
@@ -378,14 +381,45 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     // comptabilité cachée restent alignés, sans que personne n'apprenne qui
     // a payé. Le relayeur a avancé le SOL, il se rembourse en NX.
     let frais = champ_vers_u64(&pubs[3])?;
+    let (_, bump) = Pubkey::find_program_address(&[SEED_POOL], program_id);
     if frais > 0 {
-        let (_, bump) = Pubkey::find_program_address(&[SEED_POOL], program_id);
         invoke_signed(
             &ix_transfert(coffre.key, jetons_relayeur.key, compte_pool.key, frais),
             &[coffre.clone(), jetons_relayeur.clone(), compte_pool.clone(), prog_jetons.clone()],
             &[&[SEED_POOL, &[bump]]],
         )?;
         msg!("frais payes au relayeur : {} unites", frais);
+    }
+
+    // 6. LE RETRAIT — la valeur quitte le pool et redevient visible.
+    //
+    // C'est le chemin de sortie qui manquait : jusqu'ici on pouvait entrer et
+    // circuler à l'intérieur, pas sortir. Le circuit a intégré `montantRetrait`
+    // dans sa conservation, donc ce qui part d'ici a bien été retiré du total
+    // blindé — le coffre et la comptabilité cachée restent alignés.
+    //
+    // ⚠️ Le destinataire est SCELLÉ dans la preuve. Sans cette vérification, le
+    // relayeur — qui voit la preuve avant tout le monde — n'aurait qu'à changer
+    // le compte d'arrivée pour encaisser le retrait à la place du bénéficiaire.
+    // La preuve dit où va l'argent ; le programme ne fait qu'obéir.
+    let retrait = champ_vers_u64(&pubs[7])?;
+    if retrait > 0 {
+        if beneficiaire.owner != &TOKEN_PROGRAM_ID {
+            msg!("le beneficiaire n est pas un compte de jetons");
+            return Err(ProgramError::IllegalOwner);
+        }
+        if cle_vers_champ(beneficiaire.key) != destinataire {
+            msg!("ce beneficiaire n est pas celui que la preuve designe");
+            return Err(ProgramError::InvalidArgument);
+        }
+        // Le programme de jetons refusera lui-même un compte d'un autre mint :
+        // c'est sa vérification, elle est plus sûre que la nôtre.
+        invoke_signed(
+            &ix_transfert(coffre.key, beneficiaire.key, compte_pool.key, retrait),
+            &[coffre.clone(), beneficiaire.clone(), compte_pool.clone(), prog_jetons.clone()],
+            &[&[SEED_POOL, &[bump]]],
+        )?;
+        msg!("retrait de {} unites vers le beneficiaire", retrait);
     }
     Ok(())
 }
