@@ -112,16 +112,16 @@ pub fn coffre_attendu(pool: &Pubkey, mint: &Pubkey) -> Pubkey {
     .0
 }
 
-/// L'adresse d'un mint, vue comme un élément de corps BN254.
+/// Une adresse Solana, vue comme un élément de corps BN254.
 ///
 /// Une clé publique fait 256 bits, un élément de corps 254 : on met l'octet de
 /// poids fort à zéro et il reste 248 bits. Le circuit applique EXACTEMENT la
 /// même règle (`gen_devnet.js`, `MINT_HEX` masqué de la même façon). Deux
 /// conversions qui divergeraient d'un bit produiraient un refus de preuve sans
 /// aucun message — c'est le genre d'écart qu'on ne trouve qu'en le cherchant.
-pub fn mint_vers_champ(mint: &Pubkey) -> [u8; 32] {
+pub fn cle_vers_champ(cle: &Pubkey) -> [u8; 32] {
     let mut f = [0u8; 32];
-    f.copy_from_slice(mint.as_ref());
+    f.copy_from_slice(cle.as_ref());
     f[0] = 0;
     f
 }
