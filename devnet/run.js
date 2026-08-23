@@ -25,6 +25,7 @@ const crypto = require("crypto");
 const {
   Connection, Keypair, PublicKey, Transaction, TransactionInstruction,
   SystemProgram, sendAndConfirmTransaction,
+  ComputeBudgetProgram,
 } = require("@solana/web3.js");
 const {
   TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount, mintTo,
@@ -55,8 +56,15 @@ const lien = (s) =>
 const nx = (n) => (Number(n) / NX).toFixed(5);
 const meta = (p, s, w) => ({ pubkey: p, isSigner: s, isWritable: w });
 
-async function envoyer(nom, ix, signataires = [payeur]) {
-  const sig = await sendAndConfirmTransaction(cx, new Transaction().add(ix), signataires, { commitment: "confirmed" });
+// Le plafond par defaut est de 200 000 CU par instruction. Le swap complet en
+// consomme plus depuis que les nullifieurs sont publics (16 aout 2026) : il faut
+// donc demander explicitement un budget. Les swaps precedents passaient de
+// justesse SOUS le defaut — c'etait de la chance, pas de la conception.
+async function envoyer(nom, ix, signataires = [payeur], budget = 400000) {
+  const tx = new Transaction()
+    .add(ComputeBudgetProgram.setComputeUnitLimit({ units: budget }))
+    .add(ix);
+  const sig = await sendAndConfirmTransaction(cx, tx, signataires, { commitment: "confirmed" });
   console.log(`  ✅ ${nom}\n     ${lien(sig)}`);
   return sig;
 }
