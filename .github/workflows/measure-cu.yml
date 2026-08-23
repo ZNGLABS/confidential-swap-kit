@@ -222,18 +222,31 @@ jobs:
           echo "payeur=$(solana address)" >> "$GITHUB_OUTPUT"
           SOLDE=$(solana balance | awk '{print $1}')
           echo "solde=$SOLDE" >> "$GITHUB_OUTPUT"
+          # Sans secret, le faucet devnet ne donne generalement rien : le job ne peut
+          # alors PAS tourner. On l'ignore proprement au lieu d'echouer — une verification
+          # rouge en permanence n'informe plus personne, elle use juste la confiance. Le
+          # cycle complet reste prouve par le job `validateur-local`, qui ne depend
+          # d'aucun secret et tourne pour n'importe quel fork.
           if awk "BEGIN{exit !($SOLDE < 2)}"; then
-            echo "::error::solde insuffisant ($SOLDE SOL) — alimenter la cle sur faucet.solana.com"
-            exit 1
+            if [ -n "$DEVNET_KEYPAIR" ]; then
+              echo "::error::solde insuffisant ($SOLDE SOL) — alimenter la cle sur faucet.solana.com"
+              exit 1
+            fi
+            echo "::notice::pas de secret DEVNET_KEYPAIR et le faucet n'a rien donne ($SOLDE SOL) — etape devnet ignoree"
+            echo "possible=non" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "possible=oui" >> "$GITHUB_OUTPUT"
       - name: Déployer sur devnet
         id: deploy
+        if: steps.fonds.outputs.possible == 'oui'
         working-directory: solana-program
         run: |
           OUT=$(solana program deploy target/deploy/nexa_verifier.so --output json)
           PID=$(echo "$OUT" | python3 -c "import sys,json;print(json.load(sys.stdin)['programId'])")
           echo "programId=$PID" >> "$GITHUB_OUTPUT"
       - name: Jouer le cycle complet
+        if: steps.fonds.outputs.possible == 'oui'
         working-directory: devnet
         run: |
           npm install --no-audit --no-fund
