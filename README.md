@@ -5,20 +5,21 @@ An open-source toolkit for **confidential token transfers on Solana**: deposit S
 Everything below is **measured by CI on a real Solana validator**, at every commit. No estimates.
 
 ```
-Groth16 verification on-chain          125 225 CU      8.9 % of the 1.4 M budget
+Groth16 verification on-chain          136 477 CU      9.8 % of the 1.4 M budget
 Full spend: verify + registry + fee
-+ withdrawal                           195 198 CU     13.9 %
++ withdrawal                           209 622 CU     15.0 %
 Rent immobilised per swap                    0 SOL
 Capacity                             1 048 576 notes / 1 048 576 nullifiers
-Circuit                                 55 496 constraints, 9 public inputs
+Circuit                                 55 496 constraints, 11 public inputs
 Proof generation (Node)                       7 s
 Proof generation on a Solana Seeker          5.8 s     measured on the device
 ```
 
-The deployed devnet build publishes the nullifiers as well — 11 public inputs, 205 122 CU
-for a full spend. Without that, the nullifier tree could not be rebuilt from the chain and
-a **second** spend was impossible; the flaw was invisible until a client was written,
-because every demo restarted from a fresh pool. Constraints are unchanged.
+The nullifiers are public inputs. Without that, the nullifier tree cannot be rebuilt from
+the chain and a **second** spend is impossible — the flaw stayed invisible until a client
+was written, because every demo restarted from a fresh pool. Publishing them costs nothing
+in privacy: `nf = Poseidon(ask, rho)` links to no note, no owner and no amount. It is the
+Zcash and Tornado Cash choice.
 
 MIT licensed. `ZNGLABS/confidential-swap-kit`.
 
@@ -64,7 +65,7 @@ Reproduce it yourself: fork, push, read the job summary. No key, no SOL, no trus
 
 **Nullifiers cost no rent.** The naive design stores one account per nullifier: 0.0009 SOL each, 0.0018 SOL per swap, immobilised forever — about $0.36 at $200/SOL, against a fee of 0.00001 tokens. No independent relayer survives that. Replacing the accounts with an **indexed Merkle tree**, whose root lives in 32 bytes of the pool account, brings rent to exactly zero. The circuit proves both that the nullifiers were absent and that they are now inserted; the chain only compares two roots.
 
-**Enriching the circuit is free on-chain.** Going from depth 6 to depth 20 tripled the circuit — 15 712 to 55 496 constraints — and multiplied capacity by 16 384. Verification moved from 125 055 to **125 225 CU: +0.14 %**. The Groth16 pairing does not depend on constraint count, only on the number of public inputs (4 174 CU each). Sizing is therefore a ceremony question, not an on-chain cost question.
+**Enriching the circuit is free on-chain.** Going from depth 6 to depth 20 tripled the circuit — 15 712 to 55 496 constraints — and multiplied capacity by 16 384. Verification moved from 125 055 to **125 225 CU: +0.14 %**. The Groth16 pairing does not depend on constraint count, only on the number of public inputs. Going from 9 to 11 public inputs then moved verification from 125 225 to 136 477 CU — **5 626 CU per public input, measured**, not the 4 174 we first estimated. Sizing the tree is therefore a ceremony question; sizing the public interface is the one that costs.
 
 **Sizing is arithmetic, not guesswork:**
 
