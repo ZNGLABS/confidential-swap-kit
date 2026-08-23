@@ -131,6 +131,18 @@ template Pour(depth, nfDepth, nBits, nfBits) {
     signal input montantRetrait;
     signal input destinataire;
 
+    // ── LES NULLIFIEURS SONT PUBLICS (16 août 2026)
+    // Ils ne l'étaient plus depuis la v3, pour économiser 8 348 CU. Conséquence
+    // découverte en écrivant le client : prouver l'absence d'un nullifieur dans
+    // un arbre INDEXÉ exige d'exhiber la feuille qui l'encadre, faite des
+    // nullifieurs déjà insérés. Sans publication, personne ne peut reconstruire
+    // cet arbre — la 1re dépense passe, la 2e est impossible à prouver.
+    // Les publier ne coûte rien à la confidentialité : nf = Poseidon(ask, rho)
+    // n'est reliable ni à la note, ni à son propriétaire, ni à un montant. C'est
+    // le choix de Zcash et de Tornado Cash.
+    // Valeur TRONQUÉE à nfBits : c'est elle que l'arbre contient.
+    signal input nullifierPub[2];
+
     // ══════════ TÉMOIN — notes consommées ══════════
     signal input inValue[2];
     signal input inRho[2];
@@ -199,6 +211,9 @@ template Pour(depth, nfDepth, nBits, nfBits) {
 
         tronc[i] = Tronquer(nfBits);
         tronc[i].in <== nf[i].out;
+
+        // le nullifieur publié est EXACTEMENT celui qui entre dans l'arbre
+        nullifierPub[i] === tronc[i].out;
 
         // ── (7) le nullifieur est NEUF, et l'arbre est mis à jour
         insert[i] = NullifierInsert(nfDepth, nfBits);
@@ -301,4 +316,4 @@ template Pour(depth, nfDepth, nBits, nfBits) {
  * Les templates sont génériques : passer en production, c'est changer ces
  * quatre chiffres. Chaque niveau de profondeur coûte ~480 contraintes pour
  * les engagements et ~960 pour les nullifieurs — et rien du tout on-chain. */
-component main {public [root, commitmentOut, fee, nfRootAvant, nfRootApres, token, montantRetrait, destinataire]} = Pour(20, 20, 64, 248);
+component main {public [root, commitmentOut, fee, nfRootAvant, nfRootApres, token, montantRetrait, destinataire, nullifierPub]} = Pour(20, 20, 64, 248);
