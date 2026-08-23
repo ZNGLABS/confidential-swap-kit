@@ -1,15 +1,14 @@
 {
-  "_note": "Scenario v6 : arbres de 1 048 576 notes et 1 048 576 nullifieurs (profondeur 20), ceremonie 2^16.",
   "depots": [
     {
       "montant": "100000000",
-      "k_hex": "1ce767c5b2f1246da26702e6dde12bccb9235e11c01496f78667d4077d68b54e",
-      "cm_attendu_hex": "09ae2eb8123962657acbd1e20485d2fec0f6d5ed8872efc3d91d80422e8e28e3"
+      "k_hex": "0d8dc123d16efa0447fe8008430b775f6ca2e989dd8fe5055392966ea73e3f8b",
+      "cm_attendu_hex": "07e41d70cdc07e3a5db42cef268ed321264f7fd092b44904a5bb0c3f51ef68b8"
     },
     {
       "montant": "100000000",
-      "k_hex": "23ea7f7c2575f0afe41594374fcc1095cf6388e1b432111193d892cd35659328",
-      "cm_attendu_hex": "0b2244e124eee6d310e2993b3e792bb6fcc699a2bf3f0d703ec78e1d33bcbd8b"
+      "k_hex": "25c00918d721db7e568fe58cc43cbdbf671d8af4ba5dc522b7d3e787dc1bf692",
+      "cm_attendu_hex": "1425f6c0ddb471691ec1c399e695e7e624575e82fb8555d2f35bc17daa48278f"
     }
   ],
   "mint_test_base58": "HnpMSSfgBkrJL7waH9BHC8KyLxAraTH9prWJq2yrVPce",
@@ -19,13 +18,14 @@
   "beneficiaire_graine": "nexa-confidential-test-beneficiaire-v1",
   "beneficiaire_compte_base58": "B8LjYgmNPWoNKvyFNTXAtX8sGSKyZtdk2uEBKtVNj2iy",
   "montant_retrait": "50000000",
-  "racine_attendue_hex": "0efcb90813ba9e2a01ecdbeeeb5dafd4fae0ca3d817f70c8484f38c2a55ff29d",
+  "racine_attendue_hex": "01ed96349faba8f63c97eb32daf783bd7df1d1b952a74f4767ba54c812276ace",
   "nf_racine_avant_hex": "0a29d3e8af83b32c517a30c24fbf9d6291a761f2906d761efb7c125275bfcec6",
-  "nf_racine_apres_hex": "0681aba1d5bdb61a08897d21781da91bac94905bb432ab01e6af14c7ee0adf99",
+  "nf_racine_apres_hex": "0d5228d8ae50c39abf43a90bfaf58f12565a6c663e5d0fb1428cb753a3aeeed6",
   "frais": "10",
   "total_depose": "200000000",
-  "proof_a_b64": "GIje1h6NrUzJBEuTd4b57eHP3nJC2hKOHw3RUaN7ZmkecO/1gq23FBYBFlvX/+UY4hDTLQTuzd6OE19WxFvHTQ==",
-  "proof_b_b64": "EEduU1Qq7s651TBYDkYil8Z4IyspKl4slR6+FGArFXkBFaIND431mdmeNiXsOnVB4m3GHRov0fBY5oKRFg4ecy0l2ScaDVouD1FZVZbnx7Cl7D/7g25NlNvjztROfLUIIW5aoqUuwQmzVJ2YgwZhaBdulhuyvexISva089jBoBc=",
-  "proof_c_b64": "HxBQArrzqTP1PmFIhttDfkTe2MHko3vLUxG/HgmQET0gNUpXNJMPOMFlkqUVyepvFy8A3W4ZqjyPFPoYGnCTYg==",
-  "public_inputs_b64": "Dvy5CBO6nioB7Nvu612v1Prgyj2Bf3DISE84wqVf8p0of3uyW8ppKAuqyc7e6xeUDwKx3LBngrfxWhNXt72oRwDZL/du99aGJoT0AiQcL6Q32/LSizN2KWIg/MAsDlRiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoKKdPor4OzLFF6MMJPv51ikadh8pBtdh77fBJSdb/OxgaBq6HVvbYaCIl9IXgdqRuslJBbtDKrAeavFMfuCt+ZAHerMyGBUk+bAbssqnyNRLBSPFNXNk+a+YUEkUXLPdsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvrwgAB2P2tNE+TUS0+vcteniitcAy/Ve4UUZnI+X3Wi5LDG"
+  "_note": "Ceremonie du 16 aout 2026 — NULLIFIEURS PUBLICS (11 entrees). Corrige le blocage de la 2e depense.",
+  "proof_a_b64": "JuSJWA22HYihiMPOuDXQBsPO+vkrnU59jFa1pvSQ4cYMZ38fBlpw7kEqnWpjk2UQew3NlO4aEY7CYk8bEyXOnA==",
+  "proof_b_b64": "GPIAIQ4CWlvqFJ541d7fEP6B3XCYwpnH9qYPAMvTR+IWoa2UoBeihPoRRdtTeYLBe7k0Zlskouw2KCw5YP5tYCpW6E/da3s00GIZ7ynm2pVnrrHomtJHKKISCe0Olt77EKZ5MgLfqyWT8BjF85vVGFjmswlgqdkH7M3pPp4HPow=",
+  "proof_c_b64": "FMpH1NBGO6afk+ztHAkr4UP+ocy2A1h8HDNA9m/csXcsDKBe3z2tRqSp3wWnnCnY3zWMGmvBvZSsHbkFAzKCZA==",
+  "public_inputs_b64": "Ae2WNJ+rqPY8l+sy2veDvX3x0blSp09HZ7pUyBInas4kojc2JrkFpXLPqyZitc7w176jWigx765Ia8y7+Z/cZgOffsDgS6qnA8KIKXh8e/LLHrtFZc3SOwfGog+V5CbiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoKKdPor4OzLFF6MMJPv51ikadh8pBtdh77fBJSdb/Oxg1SKNiuUMOav0OpC/r1jxJWWmxmPl0PsUKMt1Ojru7WAHerMyGBUk+bAbssqnyNRLBSPFNXNk+a+YUEkUXLPdsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvrwgAB2P2tNE+TUS0+vcteniitcAy/Ve4UUZnI+X3Wi5LDGAPyMEAS7hwNUK4iuVApcUExuHxKFSmOaVxXELEUJTCsASDfWrmcrWOZ1U909Dg/0x2TMXjgFYQR4YO/IVeew8w=="
 }
