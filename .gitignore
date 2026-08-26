@@ -1,0 +1,41 @@
+# ── KEY MATERIAL — nothing below may ever enter this repository.
+# A shielded pool custodies other people's tokens. One committed keypair is
+# not an incident, it is the end of the project.
+*keypair*.json
+*-keypair.json
+id.json
+wallet.json
+*.pem
+*.key
+*.secret
+.env
+.env.*
+!.env.example
+secrets/
+
+# ── Proving artifacts: large, regenerable, and not the source of truth.
+# The verification key IS tracked (circuit/verification_key.json) — it is public
+# by construction and it is what lets a third party check the deployed program.
+*.zkey
+*.ptau
+*.r1cs
+*.wasm
+*.sym
+witness.wtns
+
+# ── Build output
+node_modules/
+target/
+*.so
+dist/
+
+# ── Generated at runtime by devnet/run.js
+mint-nx.json
+resultat-jetons.json
+deploy-output.json
+
+# ── Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
