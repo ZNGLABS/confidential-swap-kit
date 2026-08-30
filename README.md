@@ -37,8 +37,12 @@ A confidential swap signed from a **browser** with a consumer wallet —
 `4uBrGwwzgS3Z7ALprydojfwrHtmbXSZmwZPFZqA6iLRRqxNFw3Ur8zxjAPoAhi5pfaYdJjGZahkPUVaPfY9Ve1tw`.
 
 > **We need 3 to 5 independent contributors for the trusted setup ceremony.**
-> About three minutes each. One honest participant is enough to make the key
-> permanently safe — see [issue #1](https://github.com/ZNGLABS/confidential-swap-kit/issues/1).
+> **[Contribute in your browser](https://znglabs.github.io/confidential-swap-kit/ceremony/contribute.html)** —
+> about 25 seconds, nothing to install. Measured: 3.3 s to fetch the 30.5 MB key,
+> 17.3 s for the contribution itself, running `snarkjs.zKey.contribute` in your own
+> tab. One honest participant is enough to make the key permanently safe — and you
+> do not have to trust us, or any other participant, for that to hold.
+> Context and rules: [issue #1](https://github.com/ZNGLABS/confidential-swap-kit/issues/1).
 
 ---
 
