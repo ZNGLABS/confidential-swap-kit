@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Contribute to the Confidential Swap Kit ceremony</title>
+<style>
+:root{--bg:#0C0A08;--fg:#F4EFE8;--dim:#9B948A;--amber:#F0A24B;--green:#5EC27A;--line:rgba(244,239,232,.10)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.65 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+  padding:0 20px 80px;-webkit-font-smoothing:antialiased}
+.rule{height:4px;background:var(--amber);margin:0 -20px 34px}
+main{max-width:720px;margin:0 auto}
+h1{font-size:1.5rem;font-weight:600;margin:0 0 .3rem}
+h2{font-size:1.02rem;font-weight:600;margin:2.4rem 0 .6rem}
+.sub{color:var(--dim);font-size:.92rem;margin-bottom:1.9rem}
+p{margin:.75rem 0}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.dim{color:var(--dim)}
+.card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:16px 0;background:rgba(244,239,232,.02)}
+.warn{border-color:rgba(240,162,75,.42);background:rgba(240,162,75,.06)}
+button{width:100%;padding:15px;font:600 1rem/1 inherit;border:0;border-radius:11px;
+  background:var(--amber);color:#1A1206;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--fg);font-weight:500}
+.bar{height:7px;border-radius:4px;background:rgba(244,239,232,.09);overflow:hidden;margin:12px 0}
+.bar>i{display:block;height:100%;width:0;background:var(--amber);transition:width .18s}
+.row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.row b{font-family:ui-monospace,Menlo,monospace;font-weight:600;color:var(--amber);text-align:right}
+.row b.ok{color:var(--green)}
+pre{white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,Menlo,monospace;
+  font-size:.8rem;background:rgba(244,239,232,.04);border:1px solid var(--line);
+  border-radius:9px;padding:13px;margin:10px 0;color:var(--fg)}
+input[type=text]{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(244,239,232,.05);color:var(--fg);font:inherit;font-size:.95rem}
+a{color:var(--amber)}
+ul{padding-left:20px}li{margin:.35rem 0}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="rule"></div>
+<main>
+
+<h1>Contribute to the trusted setup</h1>
+<div class="sub">Confidential Swap Kit &middot; phase 2 &middot; runs entirely in this tab, nothing to install</div>
+
+<p><b>What you are about to do.</b> You will add your own randomness to the proving key of
+a zero-knowledge circuit, and then destroy it. As long as <em>one single participant</em>
+genuinely destroys theirs, nobody can ever forge a proof against this circuit &mdash; not us,
+not the other participants, not a future attacker who compromises everyone else.</p>
+
+<p><b>You do not have to trust anyone here, including us.</b> Your own honesty is what
+protects the system. That is the entire point of a trusted setup ceremony, and it is why it
+is reasonable to ask a stranger to do it.</p>
+
+<div class="card warn">
+<p style="margin-top:0"><b>Why this is being asked.</b> Our phase-2 setup today has exactly
+<b>one</b> contribution, and it is labelled <span class="mono">ceremonie de TEST</span>.
+One machine knows the randomness. We say so in our README rather than waiting to be found
+out &mdash; and this page is how we fix it.</p>
+<p style="margin-bottom:0" class="dim">You can verify that claim yourself before
+contributing: <span class="mono">snarkjs zkey verify</span> lists every contribution in the
+key. The commands are in
+<a href="https://github.com/ZNGLABS/confidential-swap-kit">the repository</a>.</p>
+</div>
+
+<h2>1 &middot; Check nobody else is contributing right now</h2>
+<p>A phase-2 contribution is <b>sequential</b>: two people starting from the same key at the
+same time produce two branches, and only one can be kept. Before you start, leave a comment
+on <a href="https://github.com/ZNGLABS/confidential-swap-kit/issues/1">issue #1</a> saying
+you are taking a turn. It is a queue of one, held by a human. We are not going to pretend
+this is more automated than it is.</p>
+
+<h2>2 &middot; Your randomness</h2>
+<p>Move your mouse around and type on your keyboard. We mix what you produce with your
+browser's cryptographic random generator. Both go in; either one alone would be enough for
+the setup to be sound.</p>
+
+<div class="card">
+  <div class="bar"><i id="bar"></i></div>
+  <div class="row"><span>entropy collected</span><b id="pct">0 %</b></div>
+  <div class="row"><span>mouse samples</span><b id="nmouse">0</b></div>
+  <div class="row"><span>keystrokes</span><b id="nkeys">0</b></div>
+</div>
+
+<h2>3 &middot; Your name</h2>
+<p class="dim">Goes into the key permanently, next to your contribution. A handle is fine.
+Choose something you are willing to stand behind publicly &mdash; that is what makes the
+attestation worth anything.</p>
+<input type="text" id="who" maxlength="70" placeholder="your name or handle" autocomplete="off">
+
+<h2>4 &middot; Contribute</h2>
+<button id="go" disabled>Collect some randomness first</button>
+<div class="card hide" id="steps"></div>
+
+<div class="hide" id="done">
+  <h2>5 &middot; What to do now</h2>
+  <div class="card">
+    <p style="margin-top:0"><b>Publish this hash <em>before</em> you send the file</b> &mdash;
+    a comment on issue #1 is perfect. It is the SHA-256 of the key you just produced. A
+    public, timestamped hash is what proves you did not alter your contribution afterwards.</p>
+    <pre id="hash"></pre>
+    <button class="ghost" id="copy">Copy the hash</button>
+  </div>
+  <div class="card hide" id="bloc2">
+    <p style="margin-top:0" class="dim"><b>snarkjs contribution hash</b> &mdash; the same
+    value <span class="mono">snarkjs zkey verify</span> will print next to your name once
+    your contribution is in the chain. Worth publishing too.</p>
+    <pre id="hash2"></pre>
+  </div>
+  <div class="card">
+    <p style="margin-top:0"><b>Your key file.</b> It downloaded automatically. Send it back
+    however you like &mdash; a link on issue #1 works. Around 30 MB.</p>
+    <div class="row"><span>file</span><b id="fname">&mdash;</b></div>
+    <div class="row"><span>size</span><b id="fsize">&mdash;</b></div>
+  </div>
+  <div class="card warn">
+    <p style="margin-top:0"><b>Now destroy your randomness.</b></p>
+    <ul>
+      <li>Close this tab. The entropy never touched your disk and is not sent anywhere.</li>
+      <li>Keep no note of what you typed.</li>
+    </ul>
+    <p style="margin-bottom:0">If you keep it <em>and</em> every other participant keeps
+    theirs, someone could forge proofs. Your forgetting is the guarantee.</p>
+  </div>
+</div>
+
+<h2>What this page does, precisely</h2>
+<p class="dim">It downloads the current proving key (about 30 MB, in 8 parts) from our
+public storage, runs <span class="mono">snarkjs.zKey.contribute</span> in this tab, and
+hands you back the result. Your randomness is used in this tab and never leaves it: there is
+no upload of anything you typed, and no analytics on this page. The whole computation takes
+around 16 seconds on a normal laptop &mdash; the download is the slow part.</p>
+<p class="dim">Source of everything, MIT:
+<a href="https://github.com/ZNGLABS/confidential-swap-kit">github.com/ZNGLABS/confidential-swap-kit</a></p>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/snarkjs@0.7.6/build/snarkjs.min.js"></script>
+<script>
+const BASE = "https://bamiutggeezigmuauyhi.supabase.co/storage/v1/object/public/zk/v7/";
+const PARTS = ["zkey.00","zkey.01","zkey.02","zkey.03","zkey.04","zkey.05","zkey.06","zkey.07"];
+const CIBLE = 900;                       // samples needed before we let you start
+const $ = id => document.getElementById(id);
+
+// ---- entropy from the human -------------------------------------------------
+const pool = [];
+let nMouse = 0, nKeys = 0;
+function pousser(...v){ if(pool.length < CIBLE*4) pool.push(...v); maj(); }
+addEventListener("mousemove", e => { nMouse++; pousser(e.clientX, e.clientY, e.timeStamp & 1023); });
+addEventListener("touchmove", e => { const t=e.touches[0]; if(t){ nMouse++; pousser(t.clientX|0, t.clientY|0, e.timeStamp & 1023);} }, {passive:true});
+addEventListener("keydown",  e => { nKeys++;  pousser(e.keyCode, e.timeStamp & 1023); });
+
+function maj(){
+  const p = Math.min(100, Math.round(pool.length / CIBLE * 100));
+  $("bar").style.width = p + "%";
+  $("pct").textContent = p + " %";
+  $("nmouse").textContent = nMouse;
+  $("nkeys").textContent = nKeys;
+  const pret = p >= 100;
+  $("go").disabled = !pret;
+  $("go").textContent = pret ? "Contribute — about 25 seconds"
+                             : "Keep moving the mouse and typing…";
+}
+
+// mixes the human pool with the browser CSPRNG; either alone would do
+async function entropie(){
+  const humain = new Uint32Array(pool);
+  const machine = crypto.getRandomValues(new Uint8Array(64));
+  const tout = new Uint8Array(humain.byteLength + machine.byteLength);
+  tout.set(new Uint8Array(humain.buffer), 0);
+  tout.set(machine, humain.byteLength);
+  const h = await crypto.subtle.digest("SHA-512", tout);
+  return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+const sha256 = async buf =>
+  [...new Uint8Array(await crypto.subtle.digest("SHA-256", buf))]
+    .map(b => b.toString(16).padStart(2,"0")).join("");
+
+function ligne(nom, val){
+  const d = document.createElement("div");
+  d.className = "row";
+  d.innerHTML = "<span></span><b></b>";
+  d.firstChild.textContent = nom;
+  d.lastChild.textContent = val;
+  $("steps").appendChild(d);
+  return d.lastChild;
+}
+
+// Groups a hex string the way snarkjs prints hashes: 8 chars, 4 per line.
+function grouper(hex){
+  return (String(hex).match(/.{1,8}/g) || []).reduce((acc, g, i) =>
+      acc + g + ((i % 4 === 3) ? "\n" : " "), "").trim();
+}
+
+// snarkjs may return the contribution hash as a typed array, an array, or a
+// string depending on the build. We never depend on it: the attestation that
+// matters is the sha256 of the file, which we compute ourselves. This is only
+// shown as a bonus when it is actually there, and never fabricated.
+function hashSnark(h){
+  try{
+    if (!h) return null;
+    if (typeof h === "string") return /^[0-9a-f]+$/i.test(h) ? grouper(h) : null;
+    const o = h.buffer ? new Uint8Array(h.buffer, h.byteOffset||0, h.byteLength||h.length)
+                       : new Uint8Array(h);
+    if (!o.length) return null;
+    return grouper([...o].map(b => b.toString(16).padStart(2,"0")).join(""));
+  }catch(_){ return null; }
+}
+
+$("go").onclick = async () => {
+  const nom = ($("who").value || "").trim();
+  if (nom.length < 2) { $("who").focus(); return; }
+  $("go").disabled = true;
+  $("go").textContent = "Working — do not close this tab";
+  $("steps").classList.remove("hide");
+  $("steps").innerHTML = "";
+
+  try {
+    const t0 = performance.now();
+    const vDl = ligne("downloading the key", "…");
+    const bufs = await Promise.all(PARTS.map(async (n, i) => {
+      const r = await fetch(BASE + n);
+      if (!r.ok) throw new Error(n + " — HTTP " + r.status);
+      const b = await r.arrayBuffer();
+      vDl.textContent = (i + 1) + " / " + PARTS.length;
+      return b;
+    }));
+    const total = bufs.reduce((a, b) => a + b.byteLength, 0);
+    const zk = new Uint8Array(total);
+    let off = 0;
+    for (const b of bufs) { zk.set(new Uint8Array(b), off); off += b.byteLength; }
+    vDl.textContent = ((performance.now() - t0) / 1000).toFixed(1) + " s · "
+                    + (total / 1048576).toFixed(1) + " MB";
+
+    ligne("key you received (sha256)", (await sha256(zk)).slice(0, 24) + "…");
+
+    const vC = ligne("your contribution", "…");
+    const t1 = performance.now();
+    const sortie = { type: "mem" };
+    const brut = await snarkjs.zKey.contribute(
+      { type: "mem", data: zk }, sortie, nom, await entropie());
+    vC.textContent = ((performance.now() - t1) / 1000).toFixed(1) + " s";
+
+    const out = sortie.data instanceof Uint8Array ? sortie.data : new Uint8Array(sortie.data);
+    const nomFichier = "contribution-" + nom.replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 40) + ".zkey";
+    const sha = await sha256(out);
+
+    const v = ligne("done", "key produced");
+    v.className = "ok";
+
+    const extra = hashSnark(brut);
+    $("hash").textContent = grouper(sha);
+    if (extra) {
+      $("hash2").textContent = extra;
+      $("bloc2").classList.remove("hide");
+    }
+    $("fname").textContent = nomFichier;
+    $("fsize").textContent = (out.byteLength / 1048576).toFixed(1) + " MB";
+    $("done").classList.remove("hide");
+
+    const url = URL.createObjectURL(new Blob([out], { type: "application/octet-stream" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = nomFichier; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+    pool.length = 0;                     // the pool leaves memory as soon as it is used
+    $("go").textContent = "Contribution complete";
+    $("done").scrollIntoView({ behavior: "smooth" });
+
+  } catch (e) {
+    const v = ligne("failed", String((e && e.message) || e).slice(0, 90));
+    v.style.color = "#E06C5A";
+    $("go").disabled = false;
+    $("go").textContent = "Try again";
+  }
+};
+
+$("copy").onclick = () => {
+  navigator.clipboard.writeText($("hash").textContent)
+    .then(() => { $("copy").textContent = "Copied"; setTimeout(() => $("copy").textContent = "Copy the hash", 1800); });
+};
+
+maj();
+</script>
+</body>
+</html>
