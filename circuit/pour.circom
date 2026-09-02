@@ -120,6 +120,18 @@ template Pour(depth, nfDepth, nBits, nfBits) {
     // destinataire, et le lien avec le dépôt.
     signal input token;
 
+    // Le JETON DE FRAIS — douzième entrée, ajoutée en v8.
+    //
+    // C'est la raison d'être de cette version : payer le relayeur en NX quel
+    // que soit l'actif transféré. Sans cette entrée, la chaîne ne saurait pas
+    // de quel coffre prélever les frais, et le programme paierait depuis un
+    // coffre choisi par l'appelant.
+    //
+    // Ce que ça coûte : une entrée publique, soit 5 626 CU mesurés. Les
+    // contraintes ajoutées, elles, sont quasi gratuites on-chain — c'est ce
+    // que la courbe de coût du projet a établi.
+    signal input tokenFrais;
+
     // ── LE RETRAIT, ajouté en v5.
     //
     // `montantRetrait` : ce qui quitte le pool vers le monde visible. À zéro,
@@ -181,13 +193,27 @@ template Pour(depth, nfDepth, nBits, nfBits) {
     signal racines[3];
     racines[0] <== nfRootAvant;
 
+    // ── v8 : DEUX ACTIFS DANS UNE MÊME PREUVE.
+    //
+    // L'emplacement 0 porte toujours l'actif transféré, l'emplacement 1
+    // toujours NX. Le choix est structurel, pas vérifié : on ne peut pas
+    // écrire une transaction où il est faux.
+    //
+    // Le prix de cette simplicité : on ne peut plus fusionner deux notes du
+    // même actif, l'emplacement 1 étant réservé aux frais. Lever la limite
+    // demande une troisième entrée — les contraintes sont quasi gratuites
+    // on-chain, c'est le temps de preuve sur téléphone qui tranchera.
+    signal jetonSlot[2];
+    jetonSlot[0] <== token;
+    jetonSlot[1] <== tokenFrais;
+
     for (var i = 0; i < 2; i++) {
         // ── (2) possession : apk dérive de la clé secrète
         apk[i] = Poseidon(1);
         apk[i].inputs[0] <== inAsk[i];
 
         cmIn[i] = NoteCommitment();
-        cmIn[i].token <== token;
+        cmIn[i].token <== jetonSlot[i];
         cmIn[i].value <== inValue[i];
         cmIn[i].apk   <== apk[i].out;
         cmIn[i].rho   <== inRho[i];
@@ -252,7 +278,7 @@ template Pour(depth, nfDepth, nBits, nfBits) {
     component rangeOut[2];
     for (var k = 0; k < 2; k++) {
         cmOut[k] = NoteCommitment();
-        cmOut[k].token <== token;
+        cmOut[k].token <== jetonSlot[k];
         cmOut[k].value <== outValue[k];
         cmOut[k].apk   <== outApk[k];
         cmOut[k].rho   <== outRho[k];
@@ -300,7 +326,16 @@ template Pour(depth, nfDepth, nBits, nfBits) {
     //   · vers d'autres notes    → outValue, secret
     //   · vers le relayeur       → fee, public
     //   · vers le monde extérieur → montantRetrait, public
-    inValue[0] + inValue[1] === outValue[0] + outValue[1] + fee + montantRetrait;
+    // v8 : DEUX équations au lieu d'une, une par actif. C'est tout le
+    // changement de fond — et c'est ce qui rend NX obligatoire pour payer,
+    // quel que soit l'actif qui circule.
+    //
+    //   emplacement 0, l'actif transféré : il sort vers d'autres notes ou vers
+    //   le monde visible, jamais vers le relayeur.
+    inValue[0] === outValue[0] + montantRetrait;
+    //   emplacement 1, NX : il sort vers d'autres notes ou vers le relayeur,
+    //   jamais vers le monde visible.
+    inValue[1] === outValue[1] + fee;
 }
 
 
@@ -316,4 +351,4 @@ template Pour(depth, nfDepth, nBits, nfBits) {
  * Les templates sont génériques : passer en production, c'est changer ces
  * quatre chiffres. Chaque niveau de profondeur coûte ~480 contraintes pour
  * les engagements et ~960 pour les nullifieurs — et rien du tout on-chain. */
-component main {public [root, commitmentOut, fee, nfRootAvant, nfRootApres, token, montantRetrait, destinataire, nullifierPub]} = Pour(20, 20, 64, 248);
+component main {public [root, commitmentOut, fee, nfRootAvant, nfRootApres, token, tokenFrais, montantRetrait, destinataire, nullifierPub]} = Pour(20, 20, 64, 248);
