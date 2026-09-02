@@ -94,6 +94,24 @@ pub const PROOF_LEN: usize = 64 + 128 + 64;
 /// … ‖ entrées publiques (32 × N)
 pub const PAYLOAD_LEN: usize = PROOF_LEN + 32 * NR_PUBLIC_INPUTS;
 
+/// v8 — LA MONNAIE NX, EN DUR.
+///
+/// Le circuit garantit la cohérence : les frais sortent bien de l'emplacement 1.
+/// Il n'a AUCUN moyen de savoir quel jeton occupe cet emplacement. Sans la
+/// vérification ci-dessous, n'importe qui déclarerait sa propre monnaie sans
+/// valeur comme jeton de frais et paierait le relayeur en monnaie de singe.
+///
+/// Pourquoi une constante et non un champ modifiable du pool : un jeton de frais
+/// qu'une autorité peut changer est un levier, et quelqu'un finira par l'actionner.
+/// Le protocole annonce « aucun admin » — autant que ce soit vrai.
+///
+/// ⚠️ Mint de TEST, dérivé de la graine « nexa-NX-test-mint-v8 »
+/// (xZ6gLRio6BLoehB73TRTGiAPWhV9X1vZ9dzAawKgpMU). À remplacer par le vrai
+/// mint NX avant tout déploiement en production.
+pub const MINT_NX: Pubkey = Pubkey::new_from_array([
+    14, 59, 60, 218, 146, 85, 248, 255, 93, 54, 202, 8, 71, 149, 230, 95, 167, 67, 81, 225, 188, 70, 190, 99, 159, 244, 124, 146, 195, 211, 226, 247,
+]);
+
 pub const TAG_VERIFY: u8 = 0;
 pub const TAG_INIT: u8 = 1;
 pub const TAG_POUR: u8 = 2;
@@ -292,14 +310,20 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     let (racine, cm0, cm1) = (pubs[0], pubs[1], pubs[2]);
     let (nf_avant, nf_apres) = (pubs[4], pubs[5]);
     let jeton = pubs[6];
-    let destinataire = pubs[8];
+    // v8 — LA 12e ENTRÉE PUBLIQUE s'insère ICI, entre le jeton de l'actif et le
+    // montant retiré. Tous les index suivants se décalent donc d'un cran, et une
+    // erreur là-dessus ne lèverait aucune alerte : le programme lirait simplement
+    // la mauvaise valeur, et la preuve resterait valide.
+    let jeton_frais = pubs[7];
+    let destinataire = pubs[9];
     // pubs[3] = les frais, réglés au relayeur à l'étape 5
-    // pubs[7] = le montant retiré, envoyé au bénéficiaire à l'étape 5
+    // pubs[8] = le montant retiré, envoyé au bénéficiaire à l'étape 6
 
     let it = &mut accounts.iter();
     let payeur = next_account_info(it)?;          // le RELAYEUR : il avance le SOL
     let compte_pool = next_account_info(it)?;
-    let coffre = next_account_info(it)?;
+    let coffre = next_account_info(it)?;          // coffre de l'ACTIF transféré
+    let coffre_frais = next_account_info(it)?;    // v8 — coffre NX : les frais sortent d'ICI
     let jetons_relayeur = next_account_info(it)?; // et se rembourse ici, en NX
     let beneficiaire = next_account_info(it)?;    // là où sortent les jetons retirés
     let prog_jetons = next_account_info(it)?;
@@ -333,6 +357,33 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     }
     if cle_vers_champ(&mint) != jeton {
         msg!("le coffre ne correspond pas au jeton prouve");
+        return Err(ProgramError::InvalidArgument);
+    }
+
+    // 1ter. LE COFFRE DES FRAIS — c'est ici que NX devient le jeton de frais.
+    //
+    // Trois contrôles, et aucun n'est superflu :
+    //   a) le jeton de frais annoncé par la preuve EST la monnaie NX. Le circuit
+    //      ne peut pas l'imposer : il ignore quel jeton occupe l'emplacement 1.
+    //      Sans (a), le relayeur se fait payer en monnaie sans valeur.
+    //   b) ce compte est bien NOTRE coffre pour ce mint,
+    //   c) et son mint est bien celui que la preuve désigne — sinon un appelant
+    //      annoncerait NX et se ferait payer depuis le coffre d'un autre actif.
+    if jeton_frais != cle_vers_champ(&MINT_NX) {
+        msg!("le jeton de frais n est pas NX");
+        return Err(ProgramError::InvalidArgument);
+    }
+    if coffre_frais.owner != &TOKEN_PROGRAM_ID {
+        msg!("le coffre des frais n est pas un compte de jetons");
+        return Err(ProgramError::IllegalOwner);
+    }
+    let mint_frais = mint_compte_jetons(&coffre_frais.try_borrow_data()?)?;
+    if *coffre_frais.key != coffre_attendu(compte_pool.key, &mint_frais) {
+        msg!("ce compte n est pas le coffre du pool pour le jeton de frais");
+        return Err(ProgramError::InvalidArgument);
+    }
+    if cle_vers_champ(&mint_frais) != jeton_frais {
+        msg!("le coffre des frais ne correspond pas au jeton de frais prouve");
         return Err(ProgramError::InvalidArgument);
     }
 
@@ -376,16 +427,20 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
 
     // 5. LES FRAIS EN $NX — c'est ici que le token gagne son travail.
     //
-    // Le circuit a déjà imposé Σ entrées = Σ sorties + frais : la valeur
-    // versée au relayeur a donc été retirée du total blindé. Le coffre et la
-    // comptabilité cachée restent alignés, sans que personne n'apprenne qui
-    // a payé. Le relayeur a avancé le SOL, il se rembourse en NX.
+    // v8 : le circuit impose désormais DEUX conservations séparées,
+    //        actif : entrée = sortie + retrait      (jamais de frais)
+    //        NX    : entrée = sortie + frais        (jamais de retrait)
+    // La valeur versée au relayeur a donc été retirée du total NX blindé, et
+    // l'actif transféré n'a pas été entamé d'un centime. Chaque coffre reste
+    // aligné sur SA comptabilité cachée, sans que personne n'apprenne qui a payé.
+    // Le relayeur a avancé le SOL ; il se rembourse en NX, quel que soit l'actif
+    // que l'utilisateur faisait circuler. C'est tout l'objet de cette version.
     let frais = champ_vers_u64(&pubs[3])?;
     let (_, bump) = Pubkey::find_program_address(&[SEED_POOL], program_id);
     if frais > 0 {
         invoke_signed(
-            &ix_transfert(coffre.key, jetons_relayeur.key, compte_pool.key, frais),
-            &[coffre.clone(), jetons_relayeur.clone(), compte_pool.clone(), prog_jetons.clone()],
+            &ix_transfert(coffre_frais.key, jetons_relayeur.key, compte_pool.key, frais),
+            &[coffre_frais.clone(), jetons_relayeur.clone(), compte_pool.clone(), prog_jetons.clone()],
             &[&[SEED_POOL, &[bump]]],
         )?;
         msg!("frais payes au relayeur : {} unites", frais);
@@ -402,7 +457,7 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     // relayeur — qui voit la preuve avant tout le monde — n'aurait qu'à changer
     // le compte d'arrivée pour encaisser le retrait à la place du bénéficiaire.
     // La preuve dit où va l'argent ; le programme ne fait qu'obéir.
-    let retrait = champ_vers_u64(&pubs[7])?;
+    let retrait = champ_vers_u64(&pubs[8])?;
     if retrait > 0 {
         if beneficiaire.owner != &TOKEN_PROGRAM_ID {
             msg!("le beneficiaire n est pas un compte de jetons");
