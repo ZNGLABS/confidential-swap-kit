@@ -1,23 +1,24 @@
 # Confidential Swap Kit
 
-An open-source toolkit for **confidential token transfers on Solana**: deposit SPL tokens into a shielded pool, move value inside it without revealing amounts or parties, withdraw to a public account — and pay the relayer in a token instead of SOL.
+An open-source toolkit for **confidential token transfers on Solana**: deposit SPL tokens into a shielded pool, move value inside it without revealing amounts or parties, withdraw to a public account — and pay the relayer in **one designated token, whatever asset is moving**.
 
 Everything below is **measured by CI on a real Solana validator**, at every commit. No estimates.
 
 ```
-Groth16 verification on-chain          136 477 CU      9.8 % of the 1.4 M budget
+Groth16 verification on-chain          142 103 CU     10.15 % of the 1.4 M budget
 Full spend: verify + registry + fee
-+ withdrawal                           209 622 CU     15.0 %
++ withdrawal                           209 706 CU     15.0 %
 Rent immobilised per swap                    0 SOL
 Capacity                             1 048 576 notes / 1 048 576 nullifiers
-Circuit                                 55 496 constraints, 11 public inputs
+Circuit                                 55 496 constraints, 12 public inputs
 Proof generation (Node)                       7 s
 Proof generation on a Solana Seeker          5.8 s     measured on the device
 ```
 
 The nullifiers are public inputs. Without that, the nullifier tree cannot be rebuilt from
 the chain and a **second** spend is impossible — the flaw stayed invisible until a client
-was written, because every demo restarted from a fresh pool. Publishing them costs nothing
+was written, because every demo restarted from a fresh pool. It is now demonstrated on
+chain: see the second transaction below. Publishing them costs nothing
 in privacy: `nf = Poseidon(ask, rho)` links to no note, no owner and no amount. It is the
 Zcash and Tornado Cash choice.
 
@@ -25,15 +26,24 @@ MIT licensed. `ZNGLABS/confidential-swap-kit`.
 
 ## Live on public devnet
 
-Program `6N5k5xnVU1gNxoydLKb7YprsuJYV7k9i1B3ojbyU7PsM`. Two transactions anyone can read:
+Program `BxCp94G2PD6y1xgnLgFCs3T8MtnyGpQ5SU6cms1oBWs1`. Transactions anyone can read:
 
-A confidential swap **proved on a phone** and submitted by a relayer, so the sender's
-address is nowhere in the transaction —
+**An asset moved, and the fee was paid in a different token.** The asset vault was not
+touched for the fee, and the sender is nowhere in the transaction —
+`5pERDUaLbB5UXKk6CcSnmAYUa1PgVWVAHnRitaeMuJAaGZUSXrRX4k91pbPQV6nQr6v94jgEPvAbjmZc6n1DUsFc`
+(209 706 CU, one signer — the relayer; program log `frais payes au relayeur : 10 unites`).
+
+**A second spend, of a note born from the first one.** Both the commitment tree and the
+nullifier tree were rebuilt from the chain alone, using only the public inputs of the
+previous transaction —
+`4jn34FnLDXjrDa4z5k5ABENVspuwDHLuA6koUFRBJP2t1gvDrACUfCuM1WThf3eh3C6tSRCdhQWJnDCwHAvtAweN`
+(209 719 CU). Replaying the first proof is refused by the chain itself:
+`racine des nullifieurs perimee`.
+
+The previous single-token version stays deployed at
+`6N5k5xnVU1gNxoydLKb7YprsuJYV7k9i1B3ojbyU7PsM`, with a swap **proved on a phone** —
 `3S6cAWomFKGiyR6HVG8zATiutaEkRuLWdQRJ8XTN8n6oazp3xdQVc5q779kchSTWDqWmQChXPfCVe2weQfTtx4CK`
-(slot 484 786 576, 232 321 CU, one signer, fee paid by the relayer, program log
-`pour accepte — index 28`).
-
-A confidential swap signed from a **browser** with a consumer wallet —
+— and one signed from a **browser** with a consumer wallet —
 `4uBrGwwzgS3Z7ALprydojfwrHtmbXSZmwZPFZqA6iLRRqxNFw3Ur8zxjAPoAhi5pfaYdJjGZahkPUVaPfY9Ve1tw`.
 
 > **We need 3 to 5 independent contributors for the trusted setup ceremony.**
