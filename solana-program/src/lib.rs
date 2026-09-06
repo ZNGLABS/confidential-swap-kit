@@ -65,7 +65,8 @@ pub mod pool;
 pub mod verifying_key;
 
 use jetons::{
-    coffre_attendu, denomination_valide, ix_transfert, mint_compte_jetons, cle_vers_champ,
+    coffre_attendu, denomination_frais_valide, denomination_valide, ix_transfert,
+    mint_compte_jetons, cle_vers_champ,
     TOKEN_PROGRAM_ID,
 };
 use pool::{h3, zeros, Pool, POOL_LEN};
@@ -436,6 +437,12 @@ fn pour(program_id: &Pubkey, accounts: &[AccountInfo], corps: &[u8]) -> ProgramR
     // Le relayeur a avancé le SOL ; il se rembourse en NX, quel que soit l'actif
     // que l'utilisateur faisait circuler. C'est tout l'objet de cette version.
     let frais = champ_vers_u64(&pubs[3])?;
+    // Les frais sont eux aussi sur paliers : un montant libre identifierait le
+    // payeur, comme le faisaient les montants de dépôt libres.
+    if !denomination_frais_valide(frais) {
+        msg!("montant de frais {} hors paliers autorises", frais);
+        return Err(ProgramError::InvalidArgument);
+    }
     let (_, bump) = Pubkey::find_program_address(&[SEED_POOL], program_id);
     if frais > 0 {
         invoke_signed(
