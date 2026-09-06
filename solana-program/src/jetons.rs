@@ -48,6 +48,29 @@ pub fn denomination_valide(montant: u64) -> bool {
     DENOMINATIONS.contains(&montant)
 }
 
+/// Paliers de frais acceptés, en unités de base de NX (6 décimales) :
+/// 0 — puis 0,01, 0,1, 1 et 10 NX.
+///
+/// POURQUOI DES PALIERS, ET PAS UN MONTANT LIBRE.
+/// Un montant de frais libre **identifie celui qui paie**, exactement comme un
+/// montant de dépôt libre : notre propre mesure sur les montants libres donnait
+/// 98 % des retraits reliés par simple égalité. C'est déjà la raison des quatre
+/// dénominations imposées au dépôt ; les frais sont la même surface, restée
+/// ouverte jusqu'ici. Un relayeur qui accepterait n'importe quelle valeur
+/// détruirait l'anonymat qu'il est censé vendre.
+///
+/// Le zéro est volontairement autorisé : il correspond au cas où l'utilisateur
+/// envoie lui-même sa transaction. Il se désigne alors comme signataire, donc
+/// ce palier ne révèle rien de plus que ce qui est déjà visible.
+///
+/// Le protocole ne dit toujours pas QUEL palier demander — c'est le relayeur qui
+/// annonce ceux qu'il accepte. On contraint la forme, pas le prix.
+pub const DENOMINATIONS_FRAIS: [u64; 5] = [0, 10_000, 100_000, 1_000_000, 10_000_000];
+
+pub fn denomination_frais_valide(frais: u64) -> bool {
+    DENOMINATIONS_FRAIS.contains(&frais)
+}
+
 /// Instruction `Transfer` du programme SPL Token, encodée à la main.
 /// Format figé : `[3u8]` suivi du montant sur 8 octets little-endian.
 pub fn ix_transfert(
